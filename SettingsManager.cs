@@ -30,16 +30,17 @@ namespace ArkServerManager
         private readonly UserSettings _defaultUserSettings = new UserSettings();
 
         // Style definitions for controls
-        private static readonly SolidColorBrush TextBoxBackground = new SolidColorBrush(Color.FromRgb(97, 97, 97));
-        private static readonly SolidColorBrush ForegroundBrush = Brushes.White;
-        private static readonly SolidColorBrush LabelForeground = Brushes.White;
-        private static readonly SolidColorBrush SectionLabelForeground = Brushes.LightGray;
-        private static readonly SolidColorBrush ResetButtonBackground = Brushes.DimGray;
-        private static readonly SolidColorBrush ResetButtonForeground = Brushes.WhiteSmoke;
-        private static readonly SolidColorBrush SeparatorBrush = Brushes.Gray;
+      //  private static readonly SolidColorBrush TextBoxBackground = (SolidColorBrush)Application.Current.Resources["BackgroundBrush2"];
+      //  private static readonly SolidColorBrush ForegroundBrush = (SolidColorBrush)Application.Current.Resources["ForegroundBrush"];
+      //  private static readonly SolidColorBrush LabelForeground = (SolidColorBrush)Application.Current.Resources["ForegroundBrush"];
+      //  private static readonly SolidColorBrush SectionLabelForeground = (SolidColorBrush)Application.Current.Resources["ForegroundBrush"];
+      //  private static readonly SolidColorBrush ResetButtonBackground = (SolidColorBrush)Application.Current.Resources["BackgroundBrush2"];
+      //  private static readonly SolidColorBrush ResetButtonForeground = (SolidColorBrush)Application.Current.Resources["ForegroundBrush"];
+      //  private static readonly SolidColorBrush SeparatorBrush = Brushes.Gray;
         private const double ControlMinWidth = 80;
         private const double TextControlMinWidth = 150;
         private static readonly Thickness ControlMargin = new Thickness(0, 0, 0, 5); // Margin below each setting row
+        private static readonly Thickness ControlPropertyMargin = new Thickness(5, 0,5, 0); // Margin below each setting row
         private static readonly Thickness ArrayControlMargin = new Thickness(0, 0, 0, 2); // Tighter margin for array items
         private static readonly Thickness SectionLabelMargin = new Thickness(0, 15, 0, 5); // Margin around section labels
         private static readonly Thickness SeparatorMargin = new Thickness(0, 10, 0, 5); // Margin around separators
@@ -146,7 +147,8 @@ namespace ArkServerManager
         /// </summary>
         private void AddSeparator(StackPanel panel)
         {
-            panel.Children.Add(new Separator { Margin = SeparatorMargin, Background = SeparatorBrush });
+            //panel.Children.Add(new Separator { Margin = SeparatorMargin, Background = SeparatorBrush });
+            panel.Children.Add(new Separator { Margin = SeparatorMargin });
         }
 
         /// <summary>
@@ -157,7 +159,7 @@ namespace ArkServerManager
             var label = new Label
             {
                 Content = content,
-                Foreground = SectionLabelForeground,
+                //Foreground = SectionLabelForeground,
                 FontWeight = FontWeights.Bold,
                 Margin = SectionLabelMargin,
                 Padding = new Thickness(0)
@@ -173,7 +175,7 @@ namespace ArkServerManager
             var label = new Label
             {
                 Content = content + ":",
-                Foreground = LabelForeground,
+                //Foreground = LabelForeground,
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 5, 0) // Right margin to separate from control
             };
@@ -307,16 +309,19 @@ namespace ArkServerManager
 
                 AddSettingLabel(itemGrid, itemName); // Use the specific item name
 
+                //align textBox to the right within its cell ********
                 // Create control (assuming float for now)
                 var textBox = new TextBox
                 {
+
                     Name = controlName,
                     MinWidth = ControlMinWidth, // Standard width for consistency
                     MaxWidth = 100, // Prevent excessive width
-                    HorizontalAlignment = HorizontalAlignment.Left,
+                    HorizontalAlignment = HorizontalAlignment.Right,
                     VerticalAlignment = VerticalAlignment.Center,
-                    Background = TextBoxBackground,
-                    Foreground = ForegroundBrush
+                    Margin = ControlPropertyMargin,
+                    // Background = TextBoxBackground,
+                    //Foreground = ForegroundBrush
                 };
 
                 // --- Event Handler for Value Change ---
@@ -374,14 +379,16 @@ namespace ArkServerManager
         /// </summary>
         private TextBox CreateFloatSettingControl(Grid parentGrid, PropertyInfo property, string controlName, Type settingsType)
         {
+            //align textBox to the right within its cell ********
             var textBox = new TextBox
             {
                 Name = controlName,
                 MinWidth = ControlMinWidth,
-                HorizontalAlignment = HorizontalAlignment.Left, // Align left within the grid cell
+                HorizontalAlignment = HorizontalAlignment.Right, // Align left within the grid cell
                 VerticalAlignment = VerticalAlignment.Center,
-                Background = TextBoxBackground,
-                Foreground = ForegroundBrush
+                Margin = ControlPropertyMargin,
+                //Background = TextBoxBackground,
+                // Foreground = ForegroundBrush
             };
 
             textBox.TextChanged += (s, e) =>
@@ -415,14 +422,16 @@ namespace ArkServerManager
         /// </summary>
         private TextBox CreateIntSettingControl(Grid parentGrid, PropertyInfo property, string controlName, Type settingsType)
         {
+            //align textBox to the right within its cell ********
             var textBox = new TextBox
             {
                 Name = controlName,
                 MinWidth = ControlMinWidth,
-                HorizontalAlignment = HorizontalAlignment.Left,
+                HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center,
-                Background = TextBoxBackground,
-                Foreground = ForegroundBrush
+                Margin = ControlPropertyMargin,
+                //Background = TextBoxBackground,
+                // Foreground = ForegroundBrush
             };
 
             // Add PreviewTextInput handler to allow only digits (and potentially negative sign)
@@ -480,14 +489,16 @@ namespace ArkServerManager
         /// </summary>
         private CheckBox CreateBoolSettingControl(Grid parentGrid, PropertyInfo property, string controlName, Type settingsType)
         {
+
+            //align checkbox to the right within its cell ********
             var checkBox = new CheckBox
             {
                 Name = controlName,
                 Content = "", // Label is in column 0
-                Foreground = ForegroundBrush,
+                //Foreground = ForegroundBrush,
                 VerticalAlignment = VerticalAlignment.Center,
-                HorizontalAlignment = HorizontalAlignment.Left, // Align checkbox itself
-                Margin = new Thickness(5, 0, 0, 0) // Indent slightly from left edge
+                HorizontalAlignment = HorizontalAlignment.Right, // Align checkbox itself
+                Margin = ControlPropertyMargin // Indent slightly from left edge
             };
 
             // Use a single handler for both Checked and Unchecked events
@@ -542,8 +553,9 @@ namespace ArkServerManager
                 MinWidth = TextControlMinWidth,
                 HorizontalAlignment = HorizontalAlignment.Stretch, // Allow text box to fill space
                 VerticalAlignment = VerticalAlignment.Center,
-                Background = TextBoxBackground,
-                Foreground = ForegroundBrush,
+                Margin = ControlPropertyMargin,
+                // Background = TextBoxBackground,
+                // Foreground = ForegroundBrush,
                 AcceptsReturn = false, // Single line input typically
                 MaxLength = 256 // Reasonable limit? Adjust as needed
             };
@@ -580,14 +592,14 @@ namespace ArkServerManager
                 FontWeight = FontWeights.Bold,
                 Width = 25,
                 Height = 22, // Slightly larger hit target
-                Margin = new Thickness(5, 0, 0, 0), // Left margin
+                Margin = new Thickness(5, 0, 5, 0), // Left margin
                 Padding = new Thickness(0),
                 VerticalAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Left,
-                Background = ResetButtonBackground,
-                Foreground = ResetButtonForeground,
+                //Background = ResetButtonBackground,
+               // Foreground = ResetButtonForeground,
                 BorderThickness = new Thickness(1),
-                BorderBrush = SeparatorBrush, // Match separator color
+               // BorderBrush = SeparatorBrush, // Match separator color
                 Focusable = false, // Don't take focus from main control
                 Tag = new ResetInfo(propertyOrControlName, settingsType, associatedControl) // Store reset info
             };

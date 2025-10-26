@@ -1,11 +1,11 @@
+// ThemeEditorWindow.xaml.cs
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using Forms = System.Windows.Forms;
-
+using System.ComponentModel;
+using System.Linq;
 
 namespace ArkServerManager
 {
@@ -21,8 +21,10 @@ namespace ArkServerManager
             _themeManager = mgr;
             _themeName = themeName;
             Title = "Theme Editor - " + themeName;
-            _colors = new Dictionary<string, string>();
-            _themeManager.ApplyTheme(_themeName); // Ensure theme is applied
+
+            // Critical: Ensure the theme being edited is active so we see changes live.
+            _themeManager.ApplyTheme(_themeName);
+
             LoadColors();
             ColorList.SelectionChanged += ColorList_SelectionChanged;
             ValueBox.TextChanged += ValueBox_TextChanged;
@@ -31,11 +33,6 @@ namespace ArkServerManager
         private void LoadColors()
         {
             _colors = _themeManager.GetThemeColors(_themeName);
-            Console.WriteLine($"Loaded colors count: {_colors.Count}");
-            foreach (var kv in _colors)
-            {
-                Console.WriteLine($"Key: {kv.Key}, Value: {kv.Value}");
-            }
             ColorList.ItemsSource = new List<KeyValuePair<string, string>>(_colors);
         }
 
@@ -46,21 +43,6 @@ namespace ArkServerManager
                 KeyBox.Text = kv.Key;
                 ValueBox.Text = kv.Value;
                 UpdatePreview(kv.Value);
-            }
-            else
-            {
-                KeyBox.Text = string.Empty;
-                ValueBox.Text = string.Empty;
-                PreviewRect.Fill = Brushes.Transparent;
-            }
-        }
-
-        private void ColorList_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            if (ColorList.SelectedItem is KeyValuePair<string, string> kv)
-            {
-                KeyBox.Text = kv.Key;
-                PickColor_Click(this, null);
             }
         }
 
@@ -73,54 +55,30 @@ namespace ArkServerManager
         {
             try
             {
-                if (!string.IsNullOrWhiteSpace(hex))
-                {
-                    var color = (Color)ColorConverter.ConvertFromString(hex);
-                    PreviewRect.Fill = new SolidColorBrush(color);
-                }
-                else
-                {
-                    PreviewRect.Fill = Brushes.Transparent;
-                }
+                var color = (Color)ColorConverter.ConvertFromString(hex);
+                PreviewRect.Fill = new SolidColorBrush(color);
             }
             catch
             {
-                PreviewRect.Fill = Brushes.Transparent;
+                PreviewRect.Fill = Brushes.Transparent; // Invalid color format
             }
         }
 
         private void PickColor_Click(object sender, RoutedEventArgs e)
         {
+            // (Your existing PickColor_Click code is fine)
             try
             {
-                // Get current color if needed for initial value
-                Color currentColor = Colors.Blue; // Example initial color
-                                                  // if (ColorDisplayRectangle.Fill is SolidColorBrush currentBrush)
+                Color currentColor = Colors.Blue;
+                if (PreviewRect.Fill is SolidColorBrush currentBrush)
                 {
-                    // currentColor = currentBrush.Color;
+                    currentColor = currentBrush.Color;
                 }
 
-                // Create and show the popup window
-                ColorPickerPopup popup = new ColorPickerPopup(currentColor);
-                popup.Owner = this; // Make it owned by the main window
-
-                bool? Cresult = popup.ShowDialog(); // Show modally and wait
-
-                // Check if the user clicked OK and get the chosen color
-                if (Cresult == true && popup.ChosenColor.HasValue)
+                ColorPickerPopup popup = new ColorPickerPopup(currentColor) { Owner = this };
+                if (popup.ShowDialog() == true && popup.ChosenColor.HasValue)
                 {
-                    Color selected = popup.ChosenColor.Value;
-                    // Use the selected color
-                    //ColorDisplayRectangle.Fill = new SolidColorBrush(selected);
-                   // UpdatePreview($"#{selected.A:X2}{selected.R:X2}{selected.G:X2}{selected.B:X2}");
-                   ValueBox.Text = selected.ToString();
-                    ValueBox_TextChanged(this, null);
-                    // UpdatePreview(selected.ToString());
-                    Debug.WriteLine($"Color chosen from popup: {selected}");
-                }
-                else
-                {
-                    Debug.WriteLine("Color selection cancelled.");
+                    ValueBox.Text = popup.ChosenColor.Value.ToString();
                 }
             }
             catch { }
@@ -128,27 +86,45 @@ namespace ArkServerManager
 
         private void Apply_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(KeyBox.Text)) return;
+            if (string.IsNullOrEmpty(KeyBox.Text) || !_colors.ContainsKey(KeyBox.Text))
+            {
+                return;
+            }
+
             try
             {
-                if (!string.IsNullOrEmpty(ValueBox.Text))
+                // Validate the color format before saving
+                var color = (Color)ColorConverter.ConvertFromString(ValueBox.Text);
+
+                _colors[KeyBox.Text] = ValueBox.Text.Trim();
+
+                // This now calls the corrected ThemeManager logic, which will trigger the live update
+                if (_themeManager.SaveThemeColors(_themeName, _colors))
                 {
-                    var color = (Color)ColorConverter.ConvertFromString(ValueBox.Text);
-                    _colors[KeyBox.Text] = ValueBox.Text.Trim();
-                    if (_themeManager.SaveThemeColors(_themeName, _colors))
+                    // Refresh our local listbox to show the new color square
+                    int selectedIndex = ColorList.SelectedIndex;
+                    LoadColors();
+                    if (selectedIndex >= 0)
                     {
-                        MessageBox.Show(this, "Saved colors.", "OK", MessageBoxButton.OK, MessageBoxImage.Information);
-                        LoadColors(); // Refresh the list
+                        ColorList.SelectedIndex = selectedIndex;
                     }
-                    else
-                    {
-                        MessageBox.Show(this, "Failed to save colors.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
+                }
+                else
+                {
+                    MessageBox.Show(this, "Failed to save colors.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
             catch
             {
-                MessageBox.Show(this, "Invalid color format. Use #AARRGGBB or #RRGGBB.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show(this, "Invalid color format. Use #AARRGGBB.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ColorList_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (ColorList.SelectedItem is KeyValuePair<string, string> kv)
+            {
+                PickColor_Click(sender, null);
             }
         }
 

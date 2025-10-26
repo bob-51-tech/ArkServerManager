@@ -1,349 +1,216 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Markup;
-using System.Xml.Linq;
 using System.Windows.Media;
+using System.Xml;
 
 namespace ArkServerManager
 {
     public class ThemeManager
     {
-        private readonly Dictionary<string, string> _lastKeyFile = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private readonly string _themesDir;
         private readonly string _configPath;
         private const string ConfigFileName = "themeconfig.json";
+        // A unique key to find the dictionary we are responsible for managing.
+        private const string ThemeOverrideMarker = "__LiveThemeOverrideDictionary__";
 
         public ThemeManager()
         {
             _themesDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Themes");
             if (!Directory.Exists(_themesDir)) Directory.CreateDirectory(_themesDir);
             _configPath = Path.Combine(_themesDir, ConfigFileName);
+
+            // Ensure a default theme exists on first launch
+            if (!ListThemes().Any())
+            {
+                CreateDefaultTheme();
+                SetActiveThemeName("default");
+            }
+        }
+
+        private void CreateDefaultTheme()
+        {
+            // As requested, we are now defining BRUSHES directly, not Colors.
+            var defaultThemeDict = new ResourceDictionary();
+            defaultThemeDict["BackgroundBrush1"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF2D2D2D"));
+            defaultThemeDict["BackgroundBrush2"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF4D4D4D"));
+            defaultThemeDict["BackgroundBrush3"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF8D8D8D"));
+            defaultThemeDict["ForegroundBrush"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFFFFFFF"));
+            defaultThemeDict["AccentBrush1"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FF03DAC5"));
+            defaultThemeDict["AccentBrush2"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFFF5722"));
+            defaultThemeDict["HoverBrush1"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#7708DAC8"));
+            defaultThemeDict["SelectBrush1"] = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#4408DAC8"));
+
+            // Freeze all brushes for performance
+            foreach (var value in defaultThemeDict.Values)
+            {
+                if (value is Freezable f && f.CanFreeze) f.Freeze();
+            }
+
+            SaveThemeDictionary("default", defaultThemeDict);
         }
 
         public IEnumerable<string> ListThemes()
         {
-            return Directory.EnumerateFiles(_themesDir, "*.xaml", SearchOption.TopDirectoryOnly)
-                           .Select(Path.GetFileNameWithoutExtension)
-                           .Where(n => !string.Equals(n, Path.GetFileNameWithoutExtension(ConfigFileName), StringComparison.OrdinalIgnoreCase))
-                           .OrderBy(n => n);
+            return Directory.EnumerateFiles(_themesDir, "*.theme", SearchOption.TopDirectoryOnly)
+                .Select(Path.GetFileNameWithoutExtension)
+                .OrderBy(n => n);
         }
 
         public ResourceDictionary LoadThemeDictionary(string themeName)
         {
             string path = GetThemePath(themeName);
             if (!File.Exists(path)) return null;
-            using var fs = File.OpenRead(path);
             try
             {
-                var obj = XamlReader.Load(fs);
-                if (obj is ResourceDictionary rd) return rd;
+                using var fs = File.OpenRead(path);
+                return XamlReader.Load(fs) as ResourceDictionary;
             }
-            catch
+            catch (Exception) { return null; }
+        }
+
+        public bool SaveThemeColors(string themeName, Dictionary<string, string> colors)
+        {
+            // Create a new dictionary to hold our BRUSHES
+            var newThemeDict = new ResourceDictionary();
+            foreach (var kvp in colors)
             {
-                // Ignore parse errors
+                try
+                {
+                    var color = (Color)ColorConverter.ConvertFromString(kvp.Value);
+                    var brush = new SolidColorBrush(color);
+                    brush.Freeze();
+                    // We are saving the BRUSH directly to the file now.
+                    newThemeDict[kvp.Key] = brush;
+                }
+                catch { /* Ignore invalid formats */ }
             }
-            return null;
+
+            if (!SaveThemeDictionary(themeName, newThemeDict)) return false;
+
+            // Force the live update
+            return ApplyTheme(themeName);
         }
 
         public bool ApplyTheme(string themeName)
         {
-            var rd = LoadThemeDictionary(themeName);
-            if (rd == null) return false;
+            var newThemeDict = LoadThemeDictionary(themeName);
+            if (newThemeDict == null) return false;
 
             var app = Application.Current;
             if (app == null) return false;
 
-            var toRemove = app.Resources.MergedDictionaries
-                             .Where(d => d.Contains("__ThemeManagerMarker")).ToList();
-            foreach (var d in toRemove) app.Resources.MergedDictionaries.Remove(d);
+            // BRUTE FORCE METHOD:
+            // 1. Find and completely remove any old theme override dictionary.
+            var oldDict = app.Resources.MergedDictionaries.FirstOrDefault(d => d.Contains(ThemeOverrideMarker));
+            if (oldDict != null)
+            {
+                app.Resources.MergedDictionaries.Remove(oldDict);
+            }
 
-            rd["__ThemeManagerMarker"] = themeName;
-            app.Resources.MergedDictionaries.Add(rd);
+            // 2. Tag the new dictionary so we can find it next time.
+            newThemeDict[ThemeOverrideMarker] = "true";
+
+            // 3. Add the new dictionary to the END of the list.
+            // This ensures it overrides everything else before it.
+            app.Resources.MergedDictionaries.Add(newThemeDict);
 
             SetActiveThemeName(themeName);
             return true;
         }
 
-        public bool SaveCurrentApplicationResourcesAsTheme(string themeName)
-        {
-            if (string.IsNullOrWhiteSpace(themeName)) return false;
-            string path = GetThemePath(themeName);
-
-            try
-            {
-                var merged = new ResourceDictionary();
-                foreach (var md in Application.Current.Resources.MergedDictionaries)
-                {
-                    merged.MergedDictionaries.Add(md);
-                }
-                foreach (var key in Application.Current.Resources.Keys)
-                {
-                    if (key is string k && !merged.Contains(k))
-                    {
-                        merged[k] = Application.Current.Resources[k];
-                    }
-                }
-
-                string xaml = XamlWriter.Save(merged);
-                File.WriteAllText(path, xaml);
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         public bool DeleteTheme(string themeName)
         {
+            if (themeName.Equals("default", StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show("The default theme cannot be deleted.", "Action Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return false;
+            }
+
+            if (GetActiveThemeName() == themeName)
+            {
+                ApplyTheme("default");
+            }
+
             string path = GetThemePath(themeName);
             try
             {
                 if (File.Exists(path)) File.Delete(path);
-                if (GetActiveThemeName() == themeName) SetActiveThemeName(null);
                 return true;
             }
-            catch
-            {
-                return false;
-            }
+            catch { return false; }
         }
 
-        public string GetThemePath(string themeName) => Path.Combine(_themesDir, themeName + ".xaml");
+        public bool SaveCurrentColorsAsTheme(string newThemeName)
+        {
+            if (string.IsNullOrWhiteSpace(newThemeName)) return false;
+            var app = Application.Current;
+            if (app == null) return false;
+
+            var newThemeDict = new ResourceDictionary();
+            // Scan all application resources for SolidColorBrushes and save them to the new theme.
+            // This captures the current state perfectly.
+            foreach (var dict in app.Resources.MergedDictionaries)
+            {
+                foreach (var key in dict.Keys)
+                {
+                    if (key is string keyStr && dict[key] is SolidColorBrush brush)
+                    {
+                        newThemeDict[keyStr] = brush;
+                    }
+                }
+            }
+
+            return SaveThemeDictionary(newThemeName, newThemeDict);
+        }
 
         public Dictionary<string, string> GetThemeColors(string themeName)
         {
-            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            _lastKeyFile.Clear();
-            try
+            var result = new Dictionary<string, string>();
+            var rd = LoadThemeDictionary(themeName);
+            if (rd == null) return result;
+
+            // 1. Get all keys that are strings
+            var keys = rd.Keys.OfType<string>();
+
+            // 2. Sort them alphabetically
+            var sortedKeys = keys.OrderBy(k => k);
+
+            // 3. Extract colors from the brushes
+            foreach (var key in sortedKeys)
             {
-                // First, check the currently applied resources
-                var app = Application.Current;
-                if (app != null)
+                if (rd[key] is SolidColorBrush brush)
                 {
-                    var mergedDicts = app.Resources.MergedDictionaries;
-                    foreach (var dict in mergedDicts)
-                    {
-                        foreach (var key in dict.Keys)
-                        {
-                            try
-                            {
-                                string skey = key?.ToString();
-                                if (string.IsNullOrEmpty(skey)) continue;
-                                var val = dict[key];
-                                if (val is SolidColorBrush scb)
-                                {
-                                    var c = scb.Color;
-                                    result[skey] = $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}";
-                                    _lastKeyFile[skey] = "MergedResource";
-                                }
-                                else if (val is Color c2)
-                                {
-                                    result[skey] = $"#{c2.A:X2}{c2.R:X2}{c2.G:X2}{c2.B:X2}";
-                                    _lastKeyFile[skey] = "MergedResource";
-                                }
-                            }
-                            catch { }
-                        }
-                    }
+                    result[key] = brush.Color.ToString();
                 }
-
-                // Fallback to file-based parsing if needed
-                string mainPath = GetThemePath(themeName);
-                if (File.Exists(mainPath))
+                else if (rd[key] is Color color)
                 {
-                    var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    void ParseFile(string path)
-                    {
-                        if (string.IsNullOrEmpty(path) || visited.Contains(path)) return;
-                        visited.Add(path);
-                        if (!File.Exists(path)) return;
-                        try
-                        {
-                            var doc = XDocument.Load(path);
-                            var colors = doc.Descendants().Where(d => d.Name.LocalName == "Color");
-                            foreach (var c in colors)
-                            {
-                                var keyAttr = c.Attributes().FirstOrDefault(a => a.Name.LocalName == "Key");
-                                var key = keyAttr?.Value;
-                                var val = c.Value?.Trim();
-                                if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(val) && val.StartsWith("#"))
-                                {
-                                    if (!result.ContainsKey(key)) // Avoid overwriting from merged resources
-                                    {
-                                        result[key] = val;
-                                        _lastKeyFile[key] = path;
-                                    }
-                                }
-                            }
-
-                            var brushes = doc.Descendants().Where(d => d.Name.LocalName == "SolidColorBrush");
-                            foreach (var b in brushes)
-                            {
-                                var keyAttr = b.Attributes().FirstOrDefault(a => a.Name.LocalName == "Key");
-                                var key = keyAttr?.Value;
-                                if (string.IsNullOrEmpty(key)) continue;
-                                var colorAttr = b.Attributes().FirstOrDefault(a => a.Name.LocalName == "Color")?.Value;
-                                if (!string.IsNullOrEmpty(colorAttr) && colorAttr.StartsWith("#"))
-                                {
-                                    if (!result.ContainsKey(key))
-                                    {
-                                        result[key] = colorAttr.Trim();
-                                        _lastKeyFile[key] = path;
-                                    }
-                                }
-                                var colorChild = b.Descendants().FirstOrDefault(d => d.Name.LocalName == "Color");
-                                if (colorChild != null)
-                                {
-                                    var val = colorChild.Value?.Trim();
-                                    if (!string.IsNullOrEmpty(val) && val.StartsWith("#"))
-                                    {
-                                        if (!result.ContainsKey(key))
-                                        {
-                                            result[key] = val;
-                                            _lastKeyFile[key] = path;
-                                        }
-                                    }
-                                }
-                            }
-
-                            var mergedSources = doc.Descendants()
-                                                  .Where(d => d.Name.LocalName == "ResourceDictionary")
-                                                  .SelectMany(d => d.Attributes()
-                                                                    .Where(a => a.Name.LocalName == "Source")
-                                                                    .Select(a => a.Value));
-                            foreach (var src in mergedSources)
-                            {
-                                if (string.IsNullOrEmpty(src)) continue;
-                                if (src.StartsWith("pack://", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    try
-                                    {
-                                        var uri = new Uri(src, UriKind.Absolute);
-                                        var obj = Application.LoadComponent(uri);
-                                        if (obj is ResourceDictionary rdp)
-                                        {
-                                            foreach (var key in rdp.Keys)
-                                            {
-                                                try
-                                                {
-                                                    string sk = key?.ToString();
-                                                    if (string.IsNullOrEmpty(sk)) continue;
-                                                    var val = rdp[sk];
-                                                    if (val is SolidColorBrush scb)
-                                                    {
-                                                        var c = scb.Color;
-                                                        if (!result.ContainsKey(sk))
-                                                        {
-                                                            result[sk] = $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}";
-                                                            _lastKeyFile[sk] = src;
-                                                        }
-                                                    }
-                                                    else if (val is Color c2)
-                                                    {
-                                                        if (!result.ContainsKey(sk))
-                                                        {
-                                                            result[sk] = $"#{c2.A:X2}{c2.R:X2}{c2.G:X2}{c2.B:X2}";
-                                                            _lastKeyFile[sk] = src;
-                                                        }
-                                                    }
-                                                }
-                                                catch { }
-                                            }
-                                        }
-                                    }
-                                    catch { }
-                                    continue;
-                                }
-                                string resolved = Path.IsPathRooted(src) ? src : Path.Combine(Path.GetDirectoryName(path) ?? string.Empty, src);
-                                ParseFile(resolved);
-                            }
-                        }
-                        catch { }
-                    }
-
-                    ParseFile(mainPath);
+                    // Fallback in case some old theme files still have Colors
+                    result[key] = color.ToString();
                 }
-            }
-            catch (Exception ex)
-            {
-                // Log or handle exception as needed
-                Console.WriteLine($"Error in GetThemeColors: {ex.Message}");
             }
             return result;
         }
 
-        public bool SaveThemeColors(string themeName, Dictionary<string, string> colors)
+        public string GetThemePath(string themeName) => Path.Combine(_themesDir, $"{themeName}.theme");
+
+        private bool SaveThemeDictionary(string themeName, ResourceDictionary dictionary)
         {
-            var path = GetThemePath(themeName);
-            if (!File.Exists(path)) return false;
+            if (string.IsNullOrWhiteSpace(themeName)) return false;
+            string path = GetThemePath(themeName);
             try
             {
-                foreach (var kv in colors)
-                {
-                    string targetFile = _lastKeyFile.TryGetValue(kv.Key, out var file) ? file : path;
-                    if (targetFile.StartsWith("pack://", StringComparison.OrdinalIgnoreCase) || targetFile == "MergedResource") continue;
-                    if (!File.Exists(targetFile)) continue;
-                    try
-                    {
-                        var doc = XDocument.Load(targetFile);
-                        XNamespace xns = "http://schemas.microsoft.com/winfx/2006/xaml";
-                        bool updated = false;
-                        var el = doc.Descendants().FirstOrDefault(d => d.Attributes().Any(a => a.Name.LocalName == "Key" && a.Value == kv.Key));
-                        if (el != null)
-                        {
-                            if (el.Name.LocalName == "Color")
-                            {
-                                el.Value = kv.Value;
-                                updated = true;
-                            }
-                            else if (el.Name.LocalName == "SolidColorBrush")
-                            {
-                                var colorAttr = el.Attributes().FirstOrDefault(a => a.Name.LocalName == "Color");
-                                if (colorAttr != null)
-                                {
-                                    colorAttr.Value = kv.Value;
-                                    updated = true;
-                                }
-                                else
-                                {
-                                    var colorChild = el.Descendants().FirstOrDefault(d => d.Name.LocalName == "Color");
-                                    if (colorChild != null)
-                                    {
-                                        colorChild.Value = kv.Value;
-                                        updated = true;
-                                    }
-                                }
-                            }
-                        }
-                        else
-                        {
-                            var rd = doc.Descendants().FirstOrDefault(d => d.Name.LocalName == "ResourceDictionary");
-                            if (rd != null)
-                            {
-                                rd.Add(new XElement(XName.Get("Color", xns.NamespaceName),
-                                    new XAttribute(XName.Get("Key", xns.NamespaceName), kv.Key),
-                                    kv.Value));
-                                updated = true;
-                            }
-                        }
-
-                        if (updated) doc.Save(targetFile);
-                    }
-                    catch { }
-                }
-
-                ApplyTheme(themeName); // Re-apply theme to update UI
+                var settings = new XmlWriterSettings { Indent = true, IndentChars = "    " };
+                using var writer = XmlWriter.Create(path, settings);
+                XamlWriter.Save(dictionary, writer);
                 return true;
             }
-            catch
-            {
-                return false;
-            }
+            catch (Exception) { return false; }
         }
 
         public string GetActiveThemeName()
@@ -352,8 +219,7 @@ namespace ArkServerManager
             {
                 if (!File.Exists(_configPath)) return null;
                 var json = File.ReadAllText(_configPath);
-                var doc = JsonSerializer.Deserialize<ThemeConfig>(json);
-                return doc?.ActiveTheme;
+                return JsonSerializer.Deserialize<ThemeConfig>(json)?.ActiveTheme;
             }
             catch { return null; }
         }
@@ -363,7 +229,8 @@ namespace ArkServerManager
             try
             {
                 var doc = new ThemeConfig { ActiveTheme = themeName };
-                File.WriteAllText(_configPath, JsonSerializer.Serialize(doc));
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                File.WriteAllText(_configPath, JsonSerializer.Serialize(doc, options));
             }
             catch { }
         }
