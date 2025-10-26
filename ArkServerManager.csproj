@@ -28,6 +28,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="AdvancedColorPickerLib">
+      <HintPath>..\AdvancedColorPickerLib\bin\x64\Release\AdvancedColorPickerLib.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
     <Resource Include="Icons\ark_icon.ico" />
   </ItemGroup>
 

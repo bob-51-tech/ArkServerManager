@@ -10,7 +10,8 @@ using System.Windows.Media; // For Brushes/Color in dialog
 using System.ComponentModel; // Keep for potential future use like Closing event args
 using System.Net.Sockets; // For AddressFamily
 using System.Net.NetworkInformation; // For NetworkInterface
-using Forms = System.Windows.Forms; // Added using alias for Windows Forms
+using Forms = System.Windows.Forms;
+using System.IO; // Added using alias for Windows Forms
 
 namespace ArkServerManager
 {
@@ -19,17 +20,124 @@ namespace ArkServerManager
     /// </summary>
     public partial class MainWindow : Window
     {
+        // Routed commands for context menu actions (used by XAML via x:Static)
+        public static readonly RoutedUICommand DuplicateServerCommand = new RoutedUICommand("DuplicateServer", "DuplicateServer", typeof(MainWindow));
+        public static readonly RoutedUICommand RemoveServerCommand = new RoutedUICommand("RemoveServer", "RemoveServer", typeof(MainWindow));
+        public static readonly RoutedUICommand OpenInstallFolderCommand = new RoutedUICommand("OpenInstallFolder", "OpenInstallFolder", typeof(MainWindow));
+
         private readonly ServerManager serverManager;
         private readonly SettingsManager settingsManager;
+        private readonly ThemeManager themeManager;
         public bool isInitializing = true; // Flag to prevent event handlers during setup // Made public for SettingsManager check
 
         public MainWindow()
         {
             InitializeComponent();
+            // Register command bindings for context menu commands
+            CommandBindings.Add(new CommandBinding(DuplicateServerCommand, OnDuplicateExecuted, OnDuplicateCanExecute));
+            CommandBindings.Add(new CommandBinding(RemoveServerCommand, OnRemoveExecuted, OnRemoveCanExecute));
+            CommandBindings.Add(new CommandBinding(OpenInstallFolderCommand, OnOpenInstallExecuted, OnOpenInstallCanExecute));
             serverManager = new ServerManager(ConsoleOutput); // Pass console output TextBox
             settingsManager = new SettingsManager(serverManager, GameSettingsPanel, UserSettingsPanel, ServerSettingsPanel);
+            themeManager = new ThemeManager();
             Loaded += MainWindow_Loaded; // Subscribe to Loaded event
+            // Theme UI initialization moved into Loaded to ensure ThemeListBox exists
             Closing += MainWindow_Closing; // Subscribe to Closing event
+        }
+
+        private void EditTheme_Click(object sender, RoutedEventArgs e)
+        {
+            if (ThemeListBox.SelectedItem == null) return;
+            string name = ThemeListBox.SelectedItem.ToString();
+            var win = new ThemeEditorWindow(themeManager, name) { Owner = this };
+            win.ShowDialog();
+            // After editing, reapply to see changes
+            if (themeManager.ApplyTheme(name)) LogStatus($"Reapplied theme: {name}");
+        }
+
+        // Theme UI handlers
+        private void ApplyTheme_Click(object sender, RoutedEventArgs e)
+        {
+            if (ThemeListBox.SelectedItem == null) return;
+            string name = ThemeListBox.SelectedItem.ToString();
+            if (themeManager.ApplyTheme(name)) LogStatus($"Applied theme: {name}");
+            else MessageBox.Show(this, $"Failed to apply theme: {name}", "Theme Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+
+        private void SaveTheme_Click(object sender, RoutedEventArgs e)
+        {
+            string name = PromptForThemeName();
+            if (string.IsNullOrWhiteSpace(name)) return;
+            if (themeManager.SaveCurrentApplicationResourcesAsTheme(name))
+            {
+                if (!ThemeListBox.Items.Contains(name)) ThemeListBox.Items.Add(name);
+                LogStatus($"Saved theme: {name}");
+            }
+            else MessageBox.Show(this, $"Failed to save theme: {name}", "Theme Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+
+        private void DeleteTheme_Click(object sender, RoutedEventArgs e)
+        {
+            if (ThemeListBox.SelectedItem == null) return;
+            string name = ThemeListBox.SelectedItem.ToString();
+            var res = MessageBox.Show(this, $"Delete theme '{name}'?", "Confirm", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (res != MessageBoxResult.Yes) return;
+            if (themeManager.DeleteTheme(name))
+            {
+                ThemeListBox.Items.Remove(name);
+                LogStatus($"Deleted theme: {name}");
+            }
+            else MessageBox.Show(this, $"Failed to delete theme: {name}", "Theme Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+
+        private string PromptForThemeName()
+        {
+            var dlg = new Window { Title = "Theme Name", SizeToContent = SizeToContent.WidthAndHeight, WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = this };
+            var sp = new StackPanel { Margin = new Thickness(10) };
+            sp.Children.Add(new Label { Content = "Enter theme name:" });
+            var tb = new TextBox { MinWidth = 200 };
+            sp.Children.Add(tb);
+            var btnPanel = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+            var ok = new Button { Content = "OK", IsDefault = true, Margin = new Thickness(5) };
+            var cancel = new Button { Content = "Cancel", IsCancel = true, Margin = new Thickness(5) };
+            ok.Click += (s, e) => { dlg.DialogResult = true; dlg.Close(); };
+            btnPanel.Children.Add(ok); btnPanel.Children.Add(cancel);
+            sp.Children.Add(btnPanel);
+            dlg.Content = sp;
+            if (dlg.ShowDialog() == true) return tb.Text.Trim();
+            return null;
+        }
+
+        // Command handlers for the context menu commands
+        private void OnDuplicateCanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = serverManager != null && ServerList?.SelectedItem != null;
+        }
+
+        private void OnDuplicateExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            // Reuse existing method logic
+            DuplicateServerContext_Click(sender, new RoutedEventArgs());
+        }
+
+        private void OnRemoveCanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = serverManager != null && ServerList?.SelectedItem != null;
+        }
+
+        private void OnRemoveExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            RemoveServerContext_Click(sender, new RoutedEventArgs());
+        }
+
+        private void OnOpenInstallCanExecute(object sender, CanExecuteRoutedEventArgs e)
+        {
+            e.CanExecute = serverManager != null && ServerList?.SelectedItem != null;
+        }
+
+        private void OnOpenInstallExecuted(object sender, ExecutedRoutedEventArgs e)
+        {
+            OpenServerFolderContext_Click(sender, new RoutedEventArgs());
         }
 
         /// <summary>
@@ -80,6 +188,19 @@ namespace ArkServerManager
                     // This runs after the main window is loaded and the first item is selected.
                     settingsManager.UpdateUIFromSelection();
                     LogStatus("Initial SettingsManager UI update complete.");
+                    // Load themes into UI and apply active
+                    try
+                    {
+                        ThemeListBox.Items.Clear();
+                        foreach (var t in themeManager.ListThemes()) ThemeListBox.Items.Add(t);
+                        var active = themeManager.GetActiveThemeName();
+                        if (!string.IsNullOrEmpty(active) && ThemeListBox.Items.Contains(active))
+                        {
+                            ThemeListBox.SelectedItem = active;
+                            themeManager.ApplyTheme(active);
+                        }
+                    }
+                    catch { }
                     // **** END NEW ****
 
                     // Fetch IP after everything else is done
@@ -130,8 +251,8 @@ namespace ArkServerManager
                 return;
             }
 
-            // Only fetch/set if the current IP is the default "0.0.0.0" placeholder
-            if (serverManager.CurrentServer.IpAddress == "0.0.0.0")
+            // Only fetch/set if the current IP is the default "0.0.0.0" placeholder or empty (i.e. user hasn't set it)
+            if (string.IsNullOrWhiteSpace(serverManager.CurrentServer.IpAddress) || serverManager.CurrentServer.IpAddress == "0.0.0.0")
             {
                 LogStatus("Current IP is 0.0.0.0, attempting to determine best local bind address...");
                 string localBindAddress = "0.0.0.0"; // Default to binding all interfaces
@@ -142,10 +263,10 @@ namespace ArkServerManager
                     fetchAttempted = true;
                     await Dispatcher.InvokeAsync(() => IpAddressTextBox.Text = "Determining...");
 
-                    // GetLocalIPv4Address now correctly returns 0.0.0.0 for most typical setups,
-                    // which is what ARK needs for -MultiHome=0.0.0.0 or no -MultiHome arg.
-                    // We keep the call structure in case future logic needs a specific local IP.
-                    localBindAddress = GetLocalIPv4Address(); // Gets "0.0.0.0" or a specific non-private IP if found
+                    // GetLocalIPv4Address returns the best local IPv4 address detected on the host
+                    // (first operational non-loopback, non-APIPA IPv4). We will set that address
+                    // only if the profile IP was not previously set by the user.
+                    localBindAddress = GetLocalIPv4Address();
 
                     if (string.IsNullOrWhiteSpace(localBindAddress)) // Should ideally not happen if GetLocalIPv4Address works
                     {
@@ -215,49 +336,85 @@ namespace ArkServerManager
         {
             try
             {
+                // Prefer operational physical interfaces first (Ethernet/Wireless). Collect candidates.
+                var candidates = new System.Collections.Generic.List<string>();
                 foreach (var netInterface in NetworkInterface.GetAllNetworkInterfaces())
                 {
-                    // Consider only operational interfaces (Up) and skip loopback/tunnel/etc.
-                    if (netInterface.OperationalStatus == OperationalStatus.Up &&
-                        (netInterface.NetworkInterfaceType == NetworkInterfaceType.Ethernet ||
-                         netInterface.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 ||
-                         netInterface.NetworkInterfaceType == NetworkInterfaceType.GigabitEthernet)) // Add relevant types
-                    {
-                        var ipProps = netInterface.GetIPProperties();
-                        foreach (var addrInfo in ipProps.UnicastAddresses)
-                        {
-                            // Focus on IPv4 addresses
-                            if (addrInfo.Address.AddressFamily == AddressFamily.InterNetwork)
-                            {
-                                string ipString = addrInfo.Address.ToString();
+                    if (netInterface.OperationalStatus != OperationalStatus.Up) continue;
 
-                                // Standard private ranges - For these, binding to 0.0.0.0 is usually best practice
-                                // unless you have a very specific multi-homed setup.
-                                if (ipString.StartsWith("192.168.") ||
-                                    ipString.StartsWith("10.") ||
-                                    (ipString.StartsWith("172.") && IsInRange(ipString, "172.16.0.0", "172.31.255.255")))
-                                {
-                                    // Found a private IP. Return "0.0.0.0" to let ARK bind to all.
-                                    return "0.0.0.0";
-                                }
-                                else if (!ipString.StartsWith("169.254.")) // Exclude APIPA addresses
-                                {
-                                    // Found a potentially public or non-standard IP directly on the interface.
-                                    // You *could* return this IP if needed for a specific scenario,
-                                    // but for general use, 0.0.0.0 is safer.
-                                    // return ipString; // Uncomment this line ONLY if you need to bind to a specific non-private IP
-                                }
-                            }
+                    // Skip loopback, tunnel and certain virtual types
+                    if (netInterface.NetworkInterfaceType == NetworkInterfaceType.Loopback ||
+                        netInterface.NetworkInterfaceType == NetworkInterfaceType.Tunnel)
+                        continue;
+
+                    // Optionally prefer common physical types, but accept others too
+                    var ipProps = netInterface.GetIPProperties();
+                    foreach (var addrInfo in ipProps.UnicastAddresses)
+                    {
+                        if (addrInfo.Address.AddressFamily != AddressFamily.InterNetwork) continue; // IPv4 only
+                        string ipString = addrInfo.Address.ToString();
+                        if (string.IsNullOrWhiteSpace(ipString)) continue;
+                        // Exclude APIPA addresses
+                        if (ipString.StartsWith("169.254.")) continue;
+                        // Exclude loopback 127.x.x.x just in case
+                        if (ipString.StartsWith("127.")) continue;
+
+                        candidates.Add(ipString);
+                    }
+                }
+
+                // Filter out obviously virtual adapters by checking interface name/description
+                string[] virtualIndicators = new[] { "virtual", "vmware", "vbox", "hyper-v", "vethernet", "docker", "nat", "loopback", "tunnel", "virtualbox", "vmnet" };
+
+                var physicalCandidates = new System.Collections.Generic.List<string>();
+                var otherCandidates = new System.Collections.Generic.List<string>();
+
+                foreach (var netInterface in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    if (netInterface.OperationalStatus != OperationalStatus.Up) continue;
+                    var ipProps = netInterface.GetIPProperties();
+                    foreach (var addrInfo in ipProps.UnicastAddresses)
+                    {
+                        if (addrInfo.Address.AddressFamily != AddressFamily.InterNetwork) continue;
+                        string ipString = addrInfo.Address.ToString();
+                        if (string.IsNullOrWhiteSpace(ipString)) continue;
+                        if (ipString.StartsWith("169.254.")) continue;
+                        if (ipString.StartsWith("127.")) continue;
+
+                        string nameLower = (netInterface.Name ?? "").ToLowerInvariant();
+                        string descLower = (netInterface.Description ?? "").ToLowerInvariant();
+                        bool looksVirtual = virtualIndicators.Any(v => nameLower.Contains(v) || descLower.Contains(v));
+
+                        if (!looksVirtual && (netInterface.NetworkInterfaceType == NetworkInterfaceType.Ethernet || netInterface.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || netInterface.NetworkInterfaceType == NetworkInterfaceType.GigabitEthernet))
+                        {
+                            physicalCandidates.Add(ipString);
+                        }
+                        else
+                        {
+                            otherCandidates.Add(ipString);
                         }
                     }
                 }
+
+                // Prefer RFC1918 from physical candidates first
+                Func<string, bool> isPrivate = ip => ip.StartsWith("192.168.") || ip.StartsWith("10.") || (ip.StartsWith("172.") && IsInRange(ip, "172.16.0.0", "172.31.255.255"));
+
+                var privateFromPhysical = physicalCandidates.FirstOrDefault(isPrivate);
+                if (!string.IsNullOrEmpty(privateFromPhysical)) return privateFromPhysical;
+
+                if (physicalCandidates.Any()) return physicalCandidates[0];
+
+                var privateFromOther = otherCandidates.FirstOrDefault(isPrivate);
+                if (!string.IsNullOrEmpty(privateFromOther)) return privateFromOther;
+
+                if (otherCandidates.Any()) return otherCandidates[0];
             }
             catch (Exception ex)
             {
                 Debug.WriteLine($"Error getting local IP addresses: {ex.Message}");
             }
 
-            // Default fallback: Let the server bind to all available interfaces.
+            // Fallback: no suitable IPv4 found, return 0.0.0.0 (bind all interfaces)
             return "0.0.0.0";
         }
 
@@ -404,6 +561,28 @@ namespace ArkServerManager
         }
 
         #endregion
+
+        // Helper to route mouse wheel from inner panels to parent ScrollViewer
+        private void SettingsPanel_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            var sv = FindParentScrollViewer(sender as DependencyObject);
+            if (sv != null)
+            {
+                sv.ScrollToVerticalOffset(sv.VerticalOffset - e.Delta);
+                e.Handled = true;
+            }
+        }
+
+        private ScrollViewer FindParentScrollViewer(DependencyObject start)
+        {
+            DependencyObject cur = start;
+            while (cur != null)
+            {
+                if (cur is ScrollViewer sv) return sv;
+                cur = System.Windows.Media.VisualTreeHelper.GetParent(cur);
+            }
+            return null;
+        }
 
         #region Core UI Update Logic
 
@@ -1011,6 +1190,132 @@ private void BasicSetting_TextChanged(object sender, TextChangedEventArgs e)
                     MessageBox.Show(this, $"Failed to copy to clipboard:\n{ex.Message}", "Copy Error", MessageBoxButton.OK, MessageBoxImage.Warning);
                 } 
             } 
+        }
+
+        // --- Context Menu Handlers for ServerList Items ---
+        private void DuplicateServerContext_Click(object sender, RoutedEventArgs e)
+        {
+            if (serverManager == null || ServerList.SelectedItem == null) return;
+            string origName = ServerList.SelectedItem.ToString();
+            var origServer = serverManager.CurrentServer?.Name == origName ? serverManager.CurrentServer : serverManager?.CurrentServer == null ? null : null;
+            // Fallback: find by name in manager's internal list
+            var source = serverManager == null ? null : serverManager.CurrentServer;
+            if (serverManager != null)
+            {
+                var found = serverManager.CurrentServer;
+                // Try find by name
+                try { found = serverManager.GetType().GetField("_servers", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.GetValue(serverManager) as System.Collections.IList != null ? null : found; } catch { }
+            }
+            // Simpler approach: use name to locate ArkServer in saved profiles via reflection-free method
+            ArkServer sourceServer = null;
+            try
+            {
+                var serversField = typeof(ServerManager).GetField("_servers", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var list = serversField?.GetValue(serverManager) as System.Collections.IList;
+                if (list != null)
+                {
+                    foreach (var item in list)
+                    {
+                        if (item is ArkServer asrv && asrv.Name.Equals(origName, StringComparison.OrdinalIgnoreCase)) { sourceServer = asrv; break; }
+                    }
+                }
+            }
+            catch { }
+
+            if (sourceServer == null)
+            {
+                MessageBox.Show(this, "Could not locate source server to duplicate.", "Duplicate Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            // Create copy
+            var copy = new ArkServer
+            {
+                Name = GetUniqueServerName(sourceServer.Name),
+                InstallPath = sourceServer.InstallPath + "_copy",
+                GamePort = sourceServer.GamePort,
+                QueryPort = sourceServer.QueryPort,
+                RconPort = sourceServer.RconPort,
+                PlayerLimit = sourceServer.PlayerLimit,
+                Map = sourceServer.Map,
+                Mods = sourceServer.Mods != null ? new System.Collections.Generic.List<string>(sourceServer.Mods) : new System.Collections.Generic.List<string>(),
+                GameSettings = sourceServer.GameSettings, // shallow copy ok for now
+                UserSettings = sourceServer.UserSettings,
+                ServerSettings = sourceServer.ServerSettings
+            };
+
+            // Add to manager via reflection into _servers list or better: expose API; but we'll insert via reflection for now
+            try
+            {
+                var serversField = typeof(ServerManager).GetField("_servers", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var list = serversField?.GetValue(serverManager) as System.Collections.IList;
+                list?.Add(copy);
+                serverManager.SaveServerProfiles();
+                ServerList.Items.Add(copy.Name);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Failed to duplicate server: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+        }
+
+        private string GetUniqueServerName(string baseName)
+        {
+            string name = baseName + " Copy";
+            int i = 1;
+            while (ServerList.Items.Contains(name))
+            {
+                i++;
+                name = baseName + " Copy " + i;
+            }
+            return name;
+        }
+
+        private void RemoveServerContext_Click(object sender, RoutedEventArgs e)
+        {
+            if (serverManager == null || ServerList.SelectedItem == null) return;
+            string nameToDelete = ServerList.SelectedItem.ToString();
+            var result = MessageBox.Show(this, $"Are you sure you want to delete the profile '{nameToDelete}'?\nThis will NOT delete server files.", "Confirm Delete", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (result == MessageBoxResult.Yes)
+            {
+                serverManager.DeleteServer(nameToDelete, ServerList);
+            }
+        }
+
+        private void OpenServerFolderContext_Click(object sender, RoutedEventArgs e)
+        {
+            if (serverManager == null || ServerList.SelectedItem == null) return;
+            string name = ServerList.SelectedItem.ToString();
+            ArkServer server = null;
+            try
+            {
+                var serversField = typeof(ServerManager).GetField("_servers", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var list = serversField?.GetValue(serverManager) as System.Collections.IList;
+                if (list != null)
+                {
+                    foreach (var item in list)
+                    {
+                        if (item is ArkServer asrv && asrv.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) { server = asrv; break; }
+                    }
+                }
+            }
+            catch { }
+
+            if (server == null || string.IsNullOrWhiteSpace(server.InstallPath) || !Directory.Exists(server.InstallPath))
+            {
+                MessageBox.Show(this, "Install folder not found for selected server.", "Open Folder", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            try
+            {
+                Process.Start(new ProcessStartInfo { FileName = server.InstallPath, UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Failed to open folder: {ex.Message}", "Open Folder Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     } // End class MainWindow
 }

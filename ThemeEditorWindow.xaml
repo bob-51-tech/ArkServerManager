@@ -1,0 +1,44 @@
+<Window x:Class="ArkServerManager.ThemeEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ArkServerManager"
+        Title="Theme Editor" Height="400" Width="600"
+        Background="{DynamicResource BackgroundBrush1}">
+    <Window.Resources>
+        <local:ColorStringToBrushConverter x:Key="ColorStringToBrushConverter" />
+    </Window.Resources>
+    <Grid Margin="10">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="3*"/>
+        </Grid.ColumnDefinitions>
+        <StackPanel>
+            <Label Content="Colors" FontWeight="Bold" Foreground="{DynamicResource ForegroundBrush}"/>
+            <ListBox x:Name="ColorList" Height="300" MouseDoubleClick="ColorList_DoubleClick">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <Rectangle Width="18" Height="18" Stroke="Black" Margin="0,0,6,0" Fill="{Binding Value, Converter={StaticResource ColorStringToBrushConverter}}"/>
+                            <TextBlock Text="{Binding Key}" VerticalAlignment="Center" Foreground="{DynamicResource ForegroundBrush}"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </StackPanel>
+        <StackPanel Grid.Column="1" Margin="10,0,0,0">
+            <Label Content="Edit Color" FontWeight="Bold" Foreground="{DynamicResource ForegroundBrush}"/>
+            <TextBlock Text="Resource Key:" Foreground="{DynamicResource ForegroundBrush}"/>
+            <TextBox x:Name="KeyBox" IsReadOnly="True"/>
+            <TextBlock Text="Hex Value (#AARRGGBB or #RRGGBB):" Margin="0,8,0,0" Foreground="{DynamicResource ForegroundBrush}"/>
+            <StackPanel Orientation="Horizontal">
+                <TextBox x:Name="ValueBox" Width="200" />
+                <Button Content="Pick..." Click="PickColor_Click" Margin="8,0,0,0" />
+                <Rectangle x:Name="PreviewRect" Width="24" Height="24" Stroke="Black" Margin="8,0,0,0" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+                <Button Content="Apply" Click="Apply_Click" Width="80" Margin="0,0,8,0"/>
+                <Button Content="Close" Click="Close_Click" Width="80"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>

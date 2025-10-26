@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ArkServerManager"
         Title="ARK Server Manager" Height="765" Width="1200" MinHeight="600" MinWidth="900"
-        Background="#FF2D2D2D" Foreground="White">
+        Background="{DynamicResource BackgroundBrush1}">
     <!-- Removed StateChanged, Closing events -->
     <!-- Removed Window.Resources -->
     <!-- Removed TaskbarIcon namespace -->
@@ -17,32 +17,55 @@
         </Grid.ColumnDefinitions>
 
         <!-- Server List Panel -->
-        <Border Grid.Column="0" Background="#FF3C3C3C" Margin="10" CornerRadius="5">
+        <Border Grid.Column="0" Margin="10" CornerRadius="5">
             <DockPanel Margin="10">
                 <StackPanel DockPanel.Dock="Top" Orientation="Vertical">
-                    <Button Content="New Server" Click="NewServer_Click" Margin="0,0,0,5" Background="#FF4CAF50" Foreground="White" Padding="10,5" BorderThickness="0" ToolTip="Create a new server profile"/>
-                    <Button Content="Delete Server" Click="DeleteServer_Click" Margin="0,0,0,10" Background="#FFEF5350" Foreground="White" Padding="10,5" BorderThickness="0" ToolTip="Delete the selected server profile (Confirmation required)"/>
+                    <Button Content="New Server" 
+                            Click="NewServer_Click" 
+                            Margin="0,0,0,5" Padding="10,5" 
+                            BorderThickness="0" 
+                            ToolTip="Create a new server profile" />
+                    <Button Content="Delete Server"
+                            Click="DeleteServer_Click" 
+                            Margin="0,0,0,5" Padding="10,5" 
+                            BorderThickness="0" 
+                            ToolTip="Delete the selected server profile (Confirmation required)"/>
                     <Button x:Name="AddExistingServerButton"
                             Content="Add Existing Server..."
+                            Padding="10,5" BorderThickness="0"
                             Click="AddExistingServer_Click"
                             Margin="0,0,0,10"
                             ToolTip="Add a profile pointing to an already-installed server directory" />
                 </StackPanel>
                 <Label DockPanel.Dock="Top" Content="Server Profiles:" Margin="0,5,0,2" FontWeight="SemiBold"/>
-                <ListBox x:Name="ServerList" SelectionChanged="ServerList_SelectionChanged" Background="#FF424242" BorderThickness="1" BorderBrush="#FF616161" Foreground="White" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                <ListBox x:Name="ServerList" SelectionChanged="ServerList_SelectionChanged" BorderThickness="1" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="ContextMenu">
+                                <Setter.Value>
+                                    <ContextMenu>
+                                        <MenuItem Header="Duplicate" Command="{x:Static local:MainWindow.DuplicateServerCommand}"/>
+                                        <MenuItem Header="Remove" Command="{x:Static local:MainWindow.RemoveServerCommand}"/>
+                                        <MenuItem Header="Open Install Folder" Command="{x:Static local:MainWindow.OpenInstallFolderCommand}"/>
+                                    </ContextMenu>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
             </DockPanel>
         </Border>
-
+        <GridSplitter Grid.Column="0" Width="5" HorizontalAlignment="Right" Margin="0"/>
         <!-- Main Content -->
-        <TabControl x:Name="MainTabControl" Grid.Column="1" Margin="10,10,10,10" Background="#FF3C3C3C" BorderThickness="0">
+        <TabControl x:Name="MainTabControl" Grid.Column="1" Margin="10,10,10,10" BorderThickness="0">
             <TabItem Header="Basic Settings">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border Background="#FF424242" CornerRadius="5" Margin="5" Padding="10">
+                    <Border CornerRadius="5" Margin="5" Padding="10">
                         <StackPanel Margin="5">
-                            <Label Content="Server Name:" Foreground="White" FontWeight="SemiBold"/>
-                            <TextBox x:Name="ServerNameTextBox" Margin="0,0,0,10" Background="#FF616161" Foreground="White" TextChanged="BasicSetting_TextChanged"/>
-                            <Label Content="Map:" Foreground="White" FontWeight="SemiBold"/>
-                            <ComboBox x:Name="MapComboBox" Margin="0,0,0,10" Background="#FF616161" Foreground="Black" SelectionChanged="BasicSetting_SelectionChanged">
+                            <Label Content="Server Name:" FontWeight="SemiBold"/>
+                            <TextBox x:Name="ServerNameTextBox" Margin="0,0,0,10" TextChanged="BasicSetting_TextChanged"/>
+                            <Label Content="Map:" FontWeight="SemiBold"/>
+                            <ComboBox x:Name="MapComboBox" Margin="0,0,0,10" SelectionChanged="BasicSetting_SelectionChanged">
                                 <ComboBoxItem Content="TheIsland_WP" />
                                 <ComboBoxItem Content="ScorchedEarth_WP" />
                                 <ComboBoxItem Content="Aberration_WP" />
@@ -56,24 +79,24 @@
                                 <ComboBoxItem Content="TheCenter_WP" />
                                 <ComboBoxItem Content="Ragnarok_WP" />
                             </ComboBox>
-                            <Label Content="Player Limit:" Foreground="White" FontWeight="SemiBold"/>
-                            <TextBox x:Name="PlayerLimitTextBox" Width="100" HorizontalAlignment="Left" Background="#FF616161" Foreground="White" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
-                            <Label Content="Query Port:" Foreground="White" FontWeight="SemiBold"/>
-                            <TextBox x:Name="QueryPortTextBox" Width="100" HorizontalAlignment="Left" Background="#FF616161" Foreground="White" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
-                            <Label Content="Game Port:" Foreground="White" FontWeight="SemiBold"/>
-                            <TextBox x:Name="GamePortTextBox" Width="100" HorizontalAlignment="Left" Background="#FF616161" Foreground="White" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
-                            <Label Content="RCON Port:" Foreground="White" FontWeight="SemiBold"/>
-                            <TextBox x:Name="RconPortTextBox" Width="100" HorizontalAlignment="Left" Background="#FF616161" Foreground="White" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
-                            <Label Content="IP Address (for binding, usually 0.0.0.0):" Foreground="White" FontWeight="SemiBold"/>
-                            <TextBox x:Name="IpAddressTextBox" Width="200" HorizontalAlignment="Left" Background="#FF616161" Foreground="White" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" ToolTip="Use 0.0.0.0 to bind to all interfaces (recommended)."/>
-                            <Label Content="Admin Password:" Foreground="White" FontWeight="SemiBold"/>
-                            <TextBox x:Name="AdminPasswordTextBox" Width="200" HorizontalAlignment="Left" Background="#FF616161" Foreground="White" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10"/>
-                            <Label Content="Server Password (optional):" Foreground="White" FontWeight="SemiBold"/>
-                            <TextBox x:Name="ServerPasswordTextBox" Width="200" HorizontalAlignment="Left" Background="#FF616161" Foreground="White" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10"/>
-                            <CheckBox x:Name="RconEnabledCheckBox" Content="Enable RCON" Foreground="White" Margin="0,0,0,10" Checked="BasicSetting_CheckBoxChanged" Unchecked="BasicSetting_CheckBoxChanged"/>
+                            <Label Content="Player Limit:" FontWeight="SemiBold"/>
+                            <TextBox x:Name="PlayerLimitTextBox" Width="100" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
+                            <Label Content="Query Port:" FontWeight="SemiBold"/>
+                            <TextBox x:Name="QueryPortTextBox" Width="100" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
+                            <Label Content="Game Port:" FontWeight="SemiBold"/>
+                            <TextBox x:Name="GamePortTextBox" Width="100" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
+                            <Label Content="RCON Port:" FontWeight="SemiBold"/>
+                            <TextBox x:Name="RconPortTextBox" Width="100" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
+                            <Label Content="IP Address (for binding, usually 0.0.0.0):" FontWeight="SemiBold"/>
+                            <TextBox x:Name="IpAddressTextBox" Width="200" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" ToolTip="Use 0.0.0.0 to bind to all interfaces (recommended)."/>
+                            <Label Content="Admin Password:" FontWeight="SemiBold"/>
+                            <TextBox x:Name="AdminPasswordTextBox" Width="200" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10"/>
+                            <Label Content="Server Password (optional):" FontWeight="SemiBold"/>
+                            <TextBox x:Name="ServerPasswordTextBox" Width="200" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10"/>
+                            <CheckBox x:Name="RconEnabledCheckBox" Content="Enable RCON" Margin="0,0,0,10" Checked="BasicSetting_CheckBoxChanged" Unchecked="BasicSetting_CheckBoxChanged"/>
 
                             <!-- Removed AutoStart/Restart Checkboxes -->
-                            <GroupBox Header="Mods" Foreground="LightGray" Margin="0,15,0,5">
+                            <GroupBox Header="Mods" Margin="0,15,0,5">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -81,8 +104,7 @@
                                     </Grid.ColumnDefinitions>
                                     <ListBox x:Name="ModListBox" Grid.Column="0" Height="120" Margin="0,0,5,0"
                                           SelectionChanged="ModListBox_SelectionChanged"
-                                          MouseDoubleClick="ModListBox_MouseDoubleClick" ToolTip="Double-click to copy Mod ID"
-                                          Background="#FF4E4E52" Foreground="White"/>
+                                          MouseDoubleClick="ModListBox_MouseDoubleClick" ToolTip="Double-click to copy Mod ID"/>
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                         <Button x:Name="AddModButton" Content="Add Mod" Click="AddMod_Click" Margin="0,0,0,5" Width="75"/>
                                         <Button x:Name="RemoveModButton" Content="Remove" Click="RemoveMod_Click" Margin="0,0,0,5" Width="75" IsEnabled="False"/>
@@ -92,43 +114,66 @@
                                 </Grid>
                             </GroupBox>
                             <Separator Margin="0,10"/>
-                            <Button x:Name="LaunchServerButton" Content="Launch Server" Click="LaunchServer_Click" Background="#FF4CAF50" Foreground="White" Padding="10,5" BorderThickness="0" Margin="0,5,0,5" ToolTip="Start the selected ARK server"/>
-                            <Button x:Name="ValidateUpdateServerButton" Content="Validate/Update Server" Click="ValidateUpdateServer_Click" Background="#FFFFC107" Foreground="Black" Padding="10,5" BorderThickness="0" Margin="0,0,0,5" ToolTip="Use SteamCMD to check for and download server updates and mods"/>
-                            <Button x:Name="TerminateServerButton" Content="Terminate Server" Click="TerminateServer_Click" Background="Red" Foreground="White" Padding="10,5" BorderThickness="0" Margin="0,0,0,5" ToolTip="Stop the currently running server process"/>
+                            <Button x:Name="LaunchServerButton" Content="Launch Server" Click="LaunchServer_Click" Padding="10,5" BorderThickness="0" Margin="0,5,0,5" ToolTip="Start the selected ARK server"/>
+                            <Button x:Name="ValidateUpdateServerButton" Content="Validate/Update Server" Click="ValidateUpdateServer_Click" Padding="10,5" BorderThickness="0" Margin="0,0,0,5" ToolTip="Use SteamCMD to check for and download server updates and mods"/>
+                            <Button x:Name="TerminateServerButton" Content="Terminate Server" Click="TerminateServer_Click" Padding="10,5" BorderThickness="0" Margin="0,0,0,5" ToolTip="Stop the currently running server process"/>
                         </StackPanel>
                     </Border>
                 </ScrollViewer>
             </TabItem>
             <TabItem Header="Server Settings">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border Background="#FF424242" CornerRadius="5" Margin="5">
-                        <StackPanel Margin="10" x:Name="ServerSettingsPanel"/>
+                    <Border CornerRadius="5" Margin="10" Background="Transparent">
+                        <StackPanel Margin="5" x:Name="ServerSettingsPanel" PreviewMouseWheel="SettingsPanel_PreviewMouseWheel">
+                            <TextBlock Text="Update and Validate the Server First..." VerticalAlignment="Center" HorizontalAlignment="Center" FontStyle="Italic"/>
+                        </StackPanel>
                     </Border>
                 </ScrollViewer>
             </TabItem>
             <TabItem Header="Game Settings">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border Background="#FF424242" CornerRadius="5" Margin="5">
-                        <StackPanel Margin="10" x:Name="GameSettingsPanel"/>
+                    <Border CornerRadius="5" Margin="5" Background="Transparent">
+                        <StackPanel Margin="10" x:Name="GameSettingsPanel" PreviewMouseWheel="SettingsPanel_PreviewMouseWheel"/>
                     </Border>
                 </ScrollViewer>
             </TabItem>
             <TabItem Header="User Settings">
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border Background="#FF424242" CornerRadius="5" Margin="5">
-                        <StackPanel Margin="10" x:Name="UserSettingsPanel"/>
+                    <Border CornerRadius="5" Margin="5" Background="Transparent">
+                        <StackPanel Margin="10" x:Name="UserSettingsPanel" PreviewMouseWheel="SettingsPanel_PreviewMouseWheel"/>
                     </Border>
                 </ScrollViewer>
             </TabItem>
             <TabItem Header="Console">
-                <Border Background="#FF1E1E1E" CornerRadius="5" Margin="5">
+                <Border CornerRadius="5" Margin="5">
                     <DockPanel Margin="5">
                         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,10,0,0">
-                            <TextBox x:Name="CommandInput" Width="400" Margin="0,0,5,0" MinWidth="200" Background="#FF616161" Foreground="White" BorderThickness="1" BorderBrush="Gray" VerticalContentAlignment="Center" KeyDown="CommandInput_KeyDown"/>
-                            <Button x:Name="SendCommandButton" Content="Send Command" Click="SendCommand_Click" Background="#FF2196F3" Foreground="White" Padding="10,5" BorderThickness="0" ToolTip="Send command via RCON"/>
+                            <TextBox x:Name="CommandInput" Width="400" Margin="0,0,5,0" MinWidth="200" BorderThickness="1" VerticalContentAlignment="Center" KeyDown="CommandInput_KeyDown"/>
+                            <Button x:Name="SendCommandButton" Content="Send Command" Click="SendCommand_Click" Padding="10,5" BorderThickness="0" ToolTip="Send command via RCON"/>
                         </StackPanel>
-                        <TextBox x:Name="ConsoleOutput" IsReadOnly="True" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" Background="#FF1E1E1E" Foreground="#FFDCDCDC" BorderThickness="0" TextWrapping="NoWrap" AcceptsReturn="True" />
+                        <TextBox x:Name="ConsoleOutput" IsReadOnly="True" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" BorderThickness="0" TextWrapping="NoWrap" AcceptsReturn="True" />
                     </DockPanel>
+                </Border>
+            </TabItem>
+            <TabItem Header="Themes">
+                <Border CornerRadius="5" Margin="5" Padding="10">
+                    <StackPanel>
+                        <Label Content="Themes" FontWeight="SemiBold" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ListBox x:Name="ThemeListBox" Grid.Column="0" Height="200" />
+                            <StackPanel Grid.Column="1" Margin="10,0,0,0">
+                                <Button Content="Apply" Click="ApplyTheme_Click" Width="80" Margin="0,0,0,5" />
+                                <Button Content="Save Current" Click="SaveTheme_Click" Width="80" Margin="0,0,0,5" />
+                                <Button Content="Delete" Click="DeleteTheme_Click" Width="80" Margin="0,0,0,5" />
+                                <Button Content="Edit" Click="EditTheme_Click" Width="80" Margin="0,0,0,5" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Text="Save uses current application resources. Theme files are stored in ./Themes" Margin="0,10,0,0" TextWrapping="Wrap" />
+                    </StackPanel>
                 </Border>
             </TabItem>
         </TabControl>

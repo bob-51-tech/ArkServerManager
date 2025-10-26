@@ -4,6 +4,12 @@
              xmlns:local="clr-namespace:ArkServerManager"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
+
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/ThemeDictionary.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/ControlDictionary.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </Application.Resources>
 </Application>

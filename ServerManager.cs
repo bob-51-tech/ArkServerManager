@@ -378,6 +378,17 @@ namespace ArkServerManager
                     sessionName = $"\"{sessionName}\"";
                 }
                 gusBuilder.AppendLine($"SessionName={sessionName}");
+                // Save selected map into GUS so it can be reloaded later
+                if (!string.IsNullOrWhiteSpace(server.Map))
+                {
+                    gusBuilder.AppendLine($"Map={server.Map}");
+                }
+                // Save active mods list into GUS (comma-separated)
+                if (server.Mods != null && server.Mods.Any())
+                {
+                    string modsCsv = string.Join(",", server.Mods.Where(m => !string.IsNullOrWhiteSpace(m)));
+                    gusBuilder.AppendLine($"ActiveMods={modsCsv}");
+                }
                 gusBuilder.AppendLine(); // Separator
 
                 // [/Script/Engine.GameSession] section (for MaxPlayers)
@@ -1303,6 +1314,32 @@ namespace ArkServerManager
                         sections.TryGetValue("/Script/ShooterGame.ShooterGameUserSettings]", out userLines)) // tolerate trailing bracket differences
                     {
                         PopulateSettingsFromKeyValues(server.UserSettings, userLines);
+                    }
+                    // Read [SessionSettings] for SessionName, Map, ActiveMods
+                    if (sections.TryGetValue("SessionSettings", out var sessionLines))
+                    {
+                        foreach (var line in sessionLines)
+                        {
+                            int eq = line.IndexOf('=');
+                            if (eq < 0) continue;
+                            string key = line.Substring(0, eq).Trim();
+                            string val = line.Substring(eq + 1).Trim();
+                            if (string.Equals(key, "SessionName", StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Remove surrounding quotes if present
+                                if (val.StartsWith("\"") && val.EndsWith("\"")) val = val.Substring(1, val.Length - 2);
+                                server.Name = val;
+                            }
+                            else if (string.Equals(key, "Map", StringComparison.OrdinalIgnoreCase))
+                            {
+                                server.Map = val;
+                            }
+                            else if (string.Equals(key, "ActiveMods", StringComparison.OrdinalIgnoreCase))
+                            {
+                                var mods = val.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+                                if (mods.Any()) server.Mods = mods;
+                            }
+                        }
                     }
                     // SessionSettings and Engine.GameSession are handled by launch args and ark-specific values; ignore for now
                 }
