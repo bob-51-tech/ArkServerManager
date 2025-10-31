@@ -18,7 +18,7 @@ namespace ArkServerManager
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : BaseWindow
     {
         // Routed commands for context menu actions (used by XAML via x:Static)
         public static readonly RoutedUICommand DuplicateServerCommand = new RoutedUICommand("DuplicateServer", "DuplicateServer", typeof(MainWindow));
@@ -993,6 +993,5 @@ namespace ArkServerManager
             }
         }
         #endregion
-
     }
 }

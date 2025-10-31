@@ -5,12 +5,13 @@ using System.Windows.Media;
 
 namespace ArkServerManager
 {
-    public partial class ColorPickerPopup : Window
+    public partial class ColorPickerPopup : BaseWindow
     {
         /// <summary>
         /// Gets the color chosen by the user (null if cancelled).
         /// </summary>
         public Color? ChosenColor { get; private set; } = null;
+        
 
         public ColorPickerPopup(Color initialColor)
         {
@@ -22,19 +23,21 @@ namespace ArkServerManager
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
             this.ChosenColor = PopupColorPicker.SelectedColor;
-            this.DialogResult = true; // Set result before closing
+            //this.DialogResult = true; // Set result before closing
+            var tem = Owner as ThemeEditorWindow;
+            tem.ValueBox.Text = this.ChosenColor.Value.ToString();
+
             this.Close();
         }
 
-        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        private void PopupColorPicker_SelectedColorChanged(object sender, Color e)
         {
-            this.Close();
-        }
-        private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ChangedButton == MouseButton.Left)
+            this.ChosenColor = PopupColorPicker.SelectedColor;
+            var tem = Owner as ThemeEditorWindow;
+            if (tem != null)
             {
-                this.DragMove();
+                tem.ValueBox.Text = this.ChosenColor.Value.ToString();
+                tem.Apply_Live(this, null);
             }
         }
     }

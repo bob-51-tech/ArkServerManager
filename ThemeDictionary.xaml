@@ -2,28 +2,29 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!-- Define theme colors -->
+    <Color x:Key="AccentColor1">#FF1ED6C1</Color>
+    <Color x:Key="AccentColor2">#FFFF5722</Color>
     <Color x:Key="BackgroundColor1">#FF2D2D2D</Color>
     <Color x:Key="BackgroundColor2">#FF4D4D4D</Color>
-    <Color x:Key="BackgroundColor3">#FF8D8D8D</Color>
+    <Color x:Key="BackgroundColor3">#FF6D6D6D</Color>
+    <Color x:Key="BackgroundColor4">#FF9D9D9D</Color>
+    <Color x:Key="FocusColor">#FFFC0000</Color>
+    <Color x:Key="SelectedColor">#771ED6C1</Color>
     <Color x:Key="ForegroundColor">#FFFFFFFF</Color>
-    <Color x:Key="AccentColor1">#FF03DAC5</Color>
-    <Color x:Key="AccentColor2">#FFFF5722</Color>
-    <Color x:Key="HoverColor1">#7708DAC8</Color>
-    <Color x:Key="SelectColor1">#4408DAC8</Color>
-
-
+    <Color x:Key="HighlihgtedColor">#FF00FFE4</Color>
+    <Color x:Key="MouseOverColor">#FF00FFE4</Color>
 
     <!-- Define brushes using the colors -->
-    <SolidColorBrush x:Key="BackgroundBrush1" Color="{DynamicResource BackgroundColor1}" />
-    <SolidColorBrush x:Key="BackgroundBrush2" Color="{DynamicResource BackgroundColor2}" />
-    <SolidColorBrush x:Key="BackgroundBrush3" Color="{DynamicResource BackgroundColor3}" />
-    <SolidColorBrush x:Key="ForegroundBrush" Color="{DynamicResource ForegroundColor}" />
-    <SolidColorBrush x:Key="AccentBrush1" Color="{DynamicResource AccentColor1}" />
-    <SolidColorBrush x:Key="AccentBrush2" Color="{DynamicResource AccentColor2}" />
-    <SolidColorBrush x:Key="HoverBrush1" Color="{DynamicResource HoverColor1}" />
-    <SolidColorBrush x:Key="SelectBrush1" Color="{DynamicResource SelectColor1}" />
-
-
-
+    <SolidColorBrush x:Key="AccentBrush1"                     Color="{DynamicResource AccentColor1}"/>
+    <SolidColorBrush x:Key="AccentBrush2"                     Color="{DynamicResource AccentColor2}"/>
+    <SolidColorBrush x:Key="BackgroundBrush1"             Color="{DynamicResource BackgroundColor1}"/>
+    <SolidColorBrush x:Key="BackgroundBrush2"             Color="{DynamicResource BackgroundColor2}"/>
+    <SolidColorBrush x:Key="BackgroundBrush3"             Color="{DynamicResource BackgroundColor3}"/>
+    <SolidColorBrush x:Key="BackgroundBrush4"             Color="{DynamicResource BackgroundColor4}"/>
+    <SolidColorBrush x:Key="FocusBrush"                        Color="{DynamicResource FocusColor}"/>
+    <SolidColorBrush x:Key="SelectedBrush"                    Color="{DynamicResource SelectedColor}"/>
+    <SolidColorBrush x:Key="ForegroundBrush"               Color="{DynamicResource ForegroundColor}"/>
+    <SolidColorBrush x:Key="HighlihgtedBrush"                Color="{DynamicResource HighlihgtedColor}"/>
+    <SolidColorBrush x:Key="MouseOverBrush"               Color="{DynamicResource MouseOverColor}"/>
 
 </ResourceDictionary>

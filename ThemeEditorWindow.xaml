@@ -1,12 +1,13 @@
-<Window x:Class="ArkServerManager.ThemeEditorWindow"
+<local:BaseWindow x:Class="ArkServerManager.ThemeEditorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ArkServerManager"
         Title="Theme Editor" Height="400" Width="600"
+        MinHeight="300" MinWidth="550"
         Background="{DynamicResource BackgroundBrush1}">
-    <Window.Resources>
+    <local:BaseWindow.Resources>
         <local:ColorStringToBrushConverter x:Key="ColorStringToBrushConverter" />
-    </Window.Resources>
+    </local:BaseWindow.Resources>
     <Grid Margin="10">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="2*"/>
@@ -25,7 +26,7 @@
                 </ListBox.ItemTemplate>
             </ListBox>
         </StackPanel>
-        <StackPanel Grid.Column="1" Margin="10,0,0,0">
+        <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Stretch">
             <Label Content="Edit Color" FontWeight="Bold" Foreground="{DynamicResource ForegroundBrush}"/>
             <TextBlock Text="Resource Key:" Foreground="{DynamicResource ForegroundBrush}"/>
             <TextBox x:Name="KeyBox" IsReadOnly="True"/>
@@ -33,12 +34,12 @@
             <StackPanel Orientation="Horizontal">
                 <TextBox x:Name="ValueBox" Width="200" />
                 <Button Content="Pick..." Click="PickColor_Click" Margin="8,0,0,0" />
-                <Rectangle x:Name="PreviewRect" Width="24" Height="24" Stroke="Black" Margin="8,0,0,0" />
-            </StackPanel>
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-                <Button Content="Apply" Click="Apply_Click" Width="80" Margin="0,0,8,0"/>
-                <Button Content="Close" Click="Close_Click" Width="80"/>
+                <Rectangle x:Name="PreviewRect" Width="24" Height="24" Stroke="Black" Margin="8,0,8,0" HorizontalAlignment="Right" />
             </StackPanel>
         </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,10" VerticalAlignment="Bottom">
+            <Button Content="Apply" Click="Apply_Click" Width="80" Margin="0,0,8,0" Visibility="Collapsed"/>
+            <Button Content="Close" Click="Close_Click" Width="80" Margin="0,0,8,0" />
+        </StackPanel>
     </Grid>
-</Window>
+</local:BaseWindow>

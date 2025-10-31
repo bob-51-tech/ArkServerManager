@@ -1,15 +1,16 @@
 // ThemeEditorWindow.xaml.cs
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.ComponentModel;
-using System.Linq;
 
 namespace ArkServerManager
 {
-    public partial class ThemeEditorWindow : Window
+    public partial class ThemeEditorWindow : BaseWindow
     {
         private readonly ThemeManager _themeManager;
         private readonly string _themeName;
@@ -28,6 +29,7 @@ namespace ArkServerManager
             LoadColors();
             ColorList.SelectionChanged += ColorList_SelectionChanged;
             ValueBox.TextChanged += ValueBox_TextChanged;
+            ColorList.SelectedItem = ColorList.Items.Cast<KeyValuePair<string, string>>().FirstOrDefault();
         }
 
         private void LoadColors()
@@ -76,15 +78,56 @@ namespace ArkServerManager
                 }
 
                 ColorPickerPopup popup = new ColorPickerPopup(currentColor) { Owner = this };
-                if (popup.ShowDialog() == true && popup.ChosenColor.HasValue)
+                popup.Show();
+                //if (popup.ShowDialog() == true && popup.ChosenColor.HasValue)
                 {
                     ValueBox.Text = popup.ChosenColor.Value.ToString();
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // It's good practice to log the exception to see what's happening
+                Debug.WriteLine($"Error in PickColor_Click: {ex.Message}");
+            }
         }
 
         private void Apply_Click(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(KeyBox.Text) || !_colors.ContainsKey(KeyBox.Text))
+            {
+                return;
+            }
+
+            try
+            {
+                // Validate the color format before saving
+                var color = (Color)ColorConverter.ConvertFromString(ValueBox.Text);
+
+                _colors[KeyBox.Text] = ValueBox.Text.Trim();
+
+                // This now calls the corrected ThemeManager logic, which will trigger the live update
+                if (_themeManager.SaveThemeColors(_themeName, _colors))
+                {
+                    // Refresh our local listbox to show the new color square
+                    int selectedIndex = ColorList.SelectedIndex;
+                    LoadColors();
+                    if (selectedIndex >= 0)
+                    {
+                        ColorList.SelectedIndex = selectedIndex;
+                    }
+                }
+                else
+                {
+                    MessageBox.Show(this, "Failed to save colors.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            catch
+            {
+                MessageBox.Show(this, "Invalid color format. Use #AARRGGBB.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        public void Apply_Live(object sender, RoutedEventArgs e)
         {
             if (string.IsNullOrEmpty(KeyBox.Text) || !_colors.ContainsKey(KeyBox.Text))
             {
