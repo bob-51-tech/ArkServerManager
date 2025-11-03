@@ -29,7 +29,7 @@ namespace ArkServerManager
             if (!ListThemes().Any())
             {
                 CreateDefaultTheme();
-                SetActiveThemeName("default");
+                SetActiveThemeName("Default");
             }
         }
 
@@ -64,7 +64,38 @@ namespace ArkServerManager
             }
 
             Debug.WriteLine($"[ThemeManager] Dynamically found {defaultThemeDict.Count} brushes in ThemeDictionary.xaml to create the default theme.");
-            SaveThemeDictionary("default", defaultThemeDict);
+            SaveThemeDictionary("Default", defaultThemeDict);
+        }
+
+        public bool CreateTheme(string name)
+        {
+            // Find the base ThemeDictionary.xaml from the application's currently loaded resources.
+            var baseThemeDict = Application.Current.Resources.MergedDictionaries
+                .FirstOrDefault(d => d.Source != null && d.Source.OriginalString.Contains("ThemeDictionary.xaml"));
+
+            if (baseThemeDict == null)
+            {
+                Debug.WriteLine("[ThemeManager] CRITICAL ERROR: Could not find 'ThemeDictionary.xaml' in application resources to create the default theme.");
+                return false;
+            }
+
+            // Create a new dictionary that will become the 'default.theme' file.
+            var defaultThemeDict = new ResourceDictionary();
+
+            // Iterate through all resources in the base theme dictionary.
+            foreach (var key in baseThemeDict.Keys)
+            {
+                // We only care about SolidColorBrushes, as these are what we want to be themeable.
+                if (key is string keyString && baseThemeDict[key] is SolidColorBrush brush)
+                {
+                    // Add the brush to our new dictionary.
+                    defaultThemeDict[keyString] = brush;
+                }
+            }
+
+            Debug.WriteLine($"[ThemeManager] Dynamically found {defaultThemeDict.Count} brushes in ThemeDictionary.xaml to create the default theme.");
+            SaveThemeDictionary(name, defaultThemeDict);
+            return true;
         }
 
         public IEnumerable<string> ListThemes()
@@ -128,7 +159,7 @@ namespace ArkServerManager
 
         public bool DeleteTheme(string themeName)
         {
-            if (themeName.Equals("default", StringComparison.OrdinalIgnoreCase))
+            if (themeName.Equals("Default", StringComparison.OrdinalIgnoreCase))
             {
                 MessageBox.Show("The default theme cannot be deleted.", "Action Denied", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return false;
@@ -136,7 +167,7 @@ namespace ArkServerManager
 
             if (GetActiveThemeName() == themeName)
             {
-                ApplyTheme("default");
+                ApplyTheme("Default");
             }
 
             string path = GetThemePath(themeName);

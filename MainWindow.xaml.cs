@@ -1,17 +1,18 @@
 ﻿using System;
+using System.ComponentModel; // Keep for potential future use like Closing event args
+using System.Diagnostics;
+using System.Globalization;
+using System.IO; // Added using alias for Windows Forms
 using System.Linq;
 using System.Net.Http;
+using System.Net.NetworkInformation; // For NetworkInterface
+using System.Net.Sockets; // For AddressFamily
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Diagnostics;
 using System.Windows.Input;
 using System.Windows.Media; // For Brushes/Color in dialog
-using System.ComponentModel; // Keep for potential future use like Closing event args
-using System.Net.Sockets; // For AddressFamily
-using System.Net.NetworkInformation; // For NetworkInterface
 using Forms = System.Windows.Forms;
-using System.IO; // Added using alias for Windows Forms
 
 namespace ArkServerManager
 {
@@ -30,6 +31,10 @@ namespace ArkServerManager
         private readonly ThemeManager themeManager;
         public bool isInitializing = true; // Flag to prevent event handlers during setup // Made public for SettingsManager check
 
+        private readonly IniManager _iniManager;
+        private AppSettings _appSettings;
+        private bool _isExiting = false; // Flag to allow the app to actually close
+
         public MainWindow()
         {
             InitializeComponent();
@@ -40,6 +45,15 @@ namespace ArkServerManager
             serverManager = new ServerManager(ConsoleOutput); // Pass console output TextBox
             settingsManager = new SettingsManager(serverManager, GameSettingsPanel, UserSettingsPanel, ServerSettingsPanel);
 
+            _iniManager = new IniManager();
+            LoadAndApplySettings();
+
+            // Hook up event handlers for the settings checkboxes
+            AutoUpdateCheckBox.Click += SettingCheckBox_Click;
+            StartWithWindows.Click += SettingCheckBox_Click;
+            MinimizeToTray.Click += SettingCheckBox_Click;
+            StartMinimized.Click += SettingCheckBox_Click;
+
             // The ThemeManager is instantiated here for use by the UI,
             // but the initial theme is now applied in App.xaml.cs before this window is even created.
             themeManager = new ThemeManager();
@@ -48,7 +62,142 @@ namespace ArkServerManager
             Closing += MainWindow_Closing; // Subscribe to Closing event
         }
 
+        private void LoadAndApplySettings()
+        {
+            _appSettings = _iniManager.LoadSettings();
+
+            // Update the checkboxes in the UI to match the loaded settings
+            AutoUpdateCheckBox.IsChecked = _appSettings.AutoUpdate;
+            StartWithWindows.IsChecked = _appSettings.StartWithWindows;
+            MinimizeToTray.IsChecked = _appSettings.MinimizeToTray;
+            StartMinimized.IsChecked = _appSettings.StartMinimized;
+
+            // Update the tray menu checkboxes to match
+            TrayStartWithWindows.IsChecked = _appSettings.StartWithWindows;
+            TrayMinimizeToTray.IsChecked = _appSettings.MinimizeToTray;
+            TrayStartMinimized.IsChecked = _appSettings.StartMinimized;
+
+            // Apply the "Start Minimized" setting if enabled
+            if (_appSettings.StartMinimized && _appSettings.MinimizeToTray)
+            {
+                this.WindowState = WindowState.Minimized;
+                // We might hide it immediately if minimized to tray is on
+                if (this.WindowState == WindowState.Minimized)
+                {
+                    this.Hide();
+                }
+            }
+        }
+
+        // --- NEW: A single handler for all settings checkboxes ---
+        private void SettingCheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            // Update the settings object from the UI
+            _appSettings.AutoUpdate = AutoUpdateCheckBox.IsChecked ?? false;
+            _appSettings.StartWithWindows = StartWithWindows.IsChecked ?? false;
+            _appSettings.MinimizeToTray = MinimizeToTray.IsChecked ?? false;
+            _appSettings.StartMinimized = StartMinimized.IsChecked ?? false;
+
+            // Update the tray menu to stay in sync
+            TrayStartWithWindows.IsChecked = _appSettings.StartWithWindows;
+            TrayMinimizeToTray.IsChecked = _appSettings.MinimizeToTray;
+            TrayStartMinimized.IsChecked = _appSettings.StartMinimized;
+
+            // Save the updated settings to the INI file
+            _iniManager.SaveSettings(_appSettings);
+        }
+
+        // --- NEW: A single handler for all TRAY settings menu items ---
+        private void TraySetting_Click(object sender, RoutedEventArgs e)
+        {
+            // Update the settings object from the TRAY UI
+            _appSettings.StartWithWindows = TrayStartWithWindows.IsChecked;
+            _appSettings.MinimizeToTray = TrayMinimizeToTray.IsChecked;
+            _appSettings.StartMinimized = TrayStartMinimized.IsChecked;
+
+            // Update the main window UI to stay in sync
+            StartWithWindows.IsChecked = _appSettings.StartWithWindows;
+            MinimizeToTray.IsChecked = _appSettings.MinimizeToTray;
+            StartMinimized.IsChecked = _appSettings.StartMinimized;
+
+            // Save the updated settings to the INI file
+            _iniManager.SaveSettings(_appSettings);
+        }
+
+        // --- NEW: Override the window's StateChanged event for Minimize to Tray ---
+        protected override void OnStateChanged(EventArgs e)
+        {
+            if (WindowState == WindowState.Minimized && _appSettings.MinimizeToTray)
+            {
+                this.Hide();
+            }
+            base.OnStateChanged(e);
+        }
+
+        // --- NEW: Override the Closing event to handle Minimize to Tray ---
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            // If the user is trying to close the window but the "real" exit hasn't been triggered,
+            // and "Minimize to Tray" is on, then just hide the window instead of closing.
+            if (!_isExiting && _appSettings.MinimizeToTray)
+            {
+                e.Cancel = true;
+                this.WindowState = WindowState.Minimized;
+            }
+            else
+            {
+                // The app is actually exiting, so dispose of the notify icon
+                MyNotifyIcon.Dispose();
+                base.OnClosing(e);
+            }
+        }
+
+        // --- NEW: Event handlers for the TaskbarIcon ---
+        private void ShowMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            this.Show();
+            this.WindowState = WindowState.Normal;
+            this.Activate(); // Bring to the foreground
+        }
+
+        private void ExitMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            _isExiting = true; // Set the flag to allow the window to truly close
+            this.Close();
+        }
+
+        private void NotifyIcon_TrayMouseDoubleClick(object sender, RoutedEventArgs e)
+        {
+            ShowMenuItem_Click(sender, e);
+        }
+
         // --- THEME UI HANDLERS ---
+        private void ThemeListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            string name = ThemeListBox.SelectedItem.ToString();
+            if(name == "Default")
+            {
+                EditButton.IsEnabled = false;
+            }
+            else
+            {
+                EditButton.IsEnabled = true;
+            }
+        }
+
+        private void ThemeListBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (ThemeListBox.SelectedItem == null) return;
+            string name = ThemeListBox.SelectedItem.ToString();
+            if (themeManager.ApplyTheme(name))
+            {
+                LogStatus($"Applied theme: {name}");
+            }
+            else
+            {
+                MessageBox.Show(this, $"Failed to apply theme: {name}", "Theme Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
 
         private void EditTheme_Click(object sender, RoutedEventArgs e)
         {
@@ -71,6 +220,26 @@ namespace ArkServerManager
             else
             {
                 MessageBox.Show(this, $"Failed to apply theme: {name}", "Theme Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void NewTheme_Click(object sender, RoutedEventArgs e)
+        {
+            string name = PromptForThemeName();
+            if (string.IsNullOrWhiteSpace(name)) return;
+            if (themeManager.CreateTheme(name))
+            {
+                if (!ThemeListBox.Items.Contains(name))
+                {
+                    ThemeListBox.Items.Add(name);
+                }
+                // Select the newly created theme
+                ThemeListBox.SelectedItem = name;
+                LogStatus($"Saved theme: {name}");
+            }
+            else
+            {
+                MessageBox.Show(this, $"Failed to save theme: {name}", "Theme Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -122,8 +291,8 @@ namespace ArkServerManager
 
         private string PromptForThemeName()
         {
-            var dlg = new Window { Title = "Theme Name", SizeToContent = SizeToContent.WidthAndHeight, WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = this };
-            var sp = new StackPanel { Margin = new Thickness(10) };
+            var dlg = new BaseWindow { Title = "Theme Name", Width = 300, Height = 200, MinWidth = 250, MinHeight = 150, WindowStartupLocation = WindowStartupLocation.CenterOwner, Owner = this};
+            var sp = new StackPanel { Margin = new Thickness(5) };
             sp.Children.Add(new Label { Content = "Enter theme name:" });
             var tb = new TextBox { MinWidth = 200 };
             sp.Children.Add(tb);
@@ -610,7 +779,7 @@ namespace ArkServerManager
                     {
                         if (item is TabItem tab)
                         {
-                            bool enableTab = serverIsSelected || tab.Header?.ToString() == "Console" || tab.Header?.ToString() == "Themes";
+                            bool enableTab = serverIsSelected || tab.Header?.ToString() == "Console" || tab.Header?.ToString() == "Settings";
                             tab.IsEnabled = enableTab;
                         }
                     }

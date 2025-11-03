@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Globalization; // For CultureInfo and NumberStyles
-using System.Linq;
 using System.Reflection;
 using System.Text; // For StringBuilder used in FormatDisplayName
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media; // For Brushes, Color
 
 namespace ArkServerManager
 {
@@ -609,7 +605,6 @@ namespace ArkServerManager
             Grid.SetColumn(resetButton, 2);
             parentGrid.Children.Add(resetButton);
         }
-
 
         #endregion
 

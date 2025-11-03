@@ -16,10 +16,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Icons\ark_icon.ico" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Costura.Fody" Version="6.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

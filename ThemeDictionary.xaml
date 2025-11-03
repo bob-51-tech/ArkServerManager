@@ -11,7 +11,7 @@
     <Color x:Key="FocusColor">#FFFC0000</Color>
     <Color x:Key="SelectedColor">#771ED6C1</Color>
     <Color x:Key="ForegroundColor">#FFFFFFFF</Color>
-    <Color x:Key="HighlihgtedColor">#FF00FFE4</Color>
+    <Color x:Key="HighlihgtedColor">#441ED6C1</Color>
     <Color x:Key="MouseOverColor">#FF00FFE4</Color>
 
     <!-- Define brushes using the colors -->
