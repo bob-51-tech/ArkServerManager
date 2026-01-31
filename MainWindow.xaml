@@ -80,120 +80,122 @@
         <GridSplitter Grid.Column="0" Width="3" HorizontalAlignment="Right" Margin="0,170"/>
         <!-- Main Content -->
         <Border Grid.Column="1" Margin="10" CornerRadius="5" Background="{DynamicResource BackgroundBrush2}">
-        <TabControl x:Name="MainTabControl" Margin="10,10,10,20" BorderThickness="1,1,1,1">
-            <TabItem Header="Basic Settings">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border CornerRadius="5" Margin="5" Padding="10">
-                        <StackPanel Margin="5">
-                            <Label Content="Server Name:" FontWeight="SemiBold"/>
-                            <TextBox x:Name="ServerNameTextBox" Margin="0,0,0,10" TextChanged="BasicSetting_TextChanged"/>
-                            <Label Content="Map:" FontWeight="SemiBold"/>
-                            <ComboBox x:Name="MapComboBox" Margin="0,0,0,10" SelectionChanged="BasicSetting_SelectionChanged">
-                                <ComboBoxItem Content="TheIsland_WP" />
-                                <ComboBoxItem Content="ScorchedEarth_WP" />
-                                <ComboBoxItem Content="Aberration_WP" />
-                                <ComboBoxItem Content="Extinction_WP" />
-                                <ComboBoxItem Content="Genesis_WP" />
-                                <ComboBoxItem Content="Genesis2_WP" />
-                                <ComboBoxItem Content="LostIsland_WP" />
-                                <ComboBoxItem Content="Fjordur_WP"/>
-                                <ComboBoxItem Content="Valguero_P" />
-                                <ComboBoxItem Content="CrystalIsles" />
-                                <ComboBoxItem Content="TheCenter_WP" />
-                                <ComboBoxItem Content="Ragnarok_WP" />
-                            </ComboBox>
-                            <Label Content="Player Limit:" FontWeight="SemiBold"/>
-                            <TextBox x:Name="PlayerLimitTextBox" Width="100" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
-                            <Label Content="Query Port:" FontWeight="SemiBold"/>
-                            <TextBox x:Name="QueryPortTextBox" Width="100" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
-                            <Label Content="Game Port:" FontWeight="SemiBold"/>
-                            <TextBox x:Name="GamePortTextBox" Width="100" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
-                            <Label Content="RCON Port:" FontWeight="SemiBold"/>
-                            <TextBox x:Name="RconPortTextBox" Width="100" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
-                            <Label Content="IP Address (for binding, usually 0.0.0.0):" FontWeight="SemiBold"/>
-                            <TextBox x:Name="IpAddressTextBox" Width="200" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" ToolTip="Use 0.0.0.0 to bind to all interfaces (recommended)."/>
-                            <Label Content="Admin Password:" FontWeight="SemiBold"/>
-                            <TextBox x:Name="AdminPasswordTextBox" Width="200" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10"/>
-                            <Label Content="Server Password (optional):" FontWeight="SemiBold"/>
-                            <TextBox x:Name="ServerPasswordTextBox" Width="200" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10"/>
-                            <CheckBox x:Name="RconEnabledCheckBox" Content="Enable RCON" Margin="0,0,0,10" Checked="BasicSetting_CheckBoxChanged" Unchecked="BasicSetting_CheckBoxChanged"/>
+            <TabControl x:Name="MainTabControl" Margin="10,10,10,20" BorderThickness="1,1,1,1">
+                <TabItem Header="Basic Settings">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <Border CornerRadius="5" Margin="5" Padding="10">
+                            <StackPanel Margin="5">
+                                <Label Content="Server Name:" FontWeight="SemiBold"/>
+                                <TextBox x:Name="ServerNameTextBox" Margin="0,0,0,10" TextChanged="BasicSetting_TextChanged"/>
+                                <Label Content="Map:" FontWeight="SemiBold"/>
+                                <ComboBox x:Name="MapComboBox" Margin="0,0,0,10" SelectionChanged="BasicSetting_SelectionChanged">
+                                    <ComboBoxItem Content="TheIsland_WP" />
+                                    <ComboBoxItem Content="ScorchedEarth_WP" />
+                                    <ComboBoxItem Content="Aberration_WP" />
+                                    <ComboBoxItem Content="Extinction_WP" />
+                                    <ComboBoxItem Content="Genesis_WP" />
+                                    <ComboBoxItem Content="Genesis2_WP" />
+                                    <ComboBoxItem Content="LostIsland_WP" />
+                                    <ComboBoxItem Content="Fjordur_WP"/>
+                                    <ComboBoxItem Content="Valguero_P" />
+                                    <ComboBoxItem Content="CrystalIsles" />
+                                    <ComboBoxItem Content="TheCenter_WP" />
+                                    <ComboBoxItem Content="Ragnarok_WP" />
+                                </ComboBox>
+                                <Label Content="Player Limit:" FontWeight="SemiBold"/>
+                                <TextBox x:Name="PlayerLimitTextBox" Width="100" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
+                                <Label Content="Query Port:" FontWeight="SemiBold"/>
+                                <TextBox x:Name="QueryPortTextBox" Width="100" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
+                                <Label Content="Game Port:" FontWeight="SemiBold"/>
+                                <TextBox x:Name="GamePortTextBox" Width="100" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
+                                <Label Content="RCON Port:" FontWeight="SemiBold"/>
+                                <TextBox x:Name="RconPortTextBox" Width="100" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" />
+                                <Label Content="IP Address (for binding, usually 0.0.0.0):" FontWeight="SemiBold"/>
+                                <TextBox x:Name="IpAddressTextBox" Width="200" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" ToolTip="Use 0.0.0.0 to bind to all interfaces (recommended)."/>
+                                <Label Content="Cluster ID (Required for transfers):" FontWeight="SemiBold"/>
+                                <TextBox x:Name="ClusterIdTextBox" Width="200" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10" ToolTip="Servers with the same Cluster ID allow player travel."/>
+                                <Label Content="Admin Password:" FontWeight="SemiBold"/>
+                                <TextBox x:Name="AdminPasswordTextBox" Width="200" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10"/>
+                                <Label Content="Server Password (optional):" FontWeight="SemiBold"/>
+                                <TextBox x:Name="ServerPasswordTextBox" Width="200" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10"/>
+                                <CheckBox x:Name="RconEnabledCheckBox" Content="Enable RCON" Margin="0,0,0,10" Checked="BasicSetting_CheckBoxChanged" Unchecked="BasicSetting_CheckBoxChanged"/>
 
-                            <!-- Removed AutoStart/Restart Checkboxes -->
-                            <GroupBox Header="Mods" Margin="0,15,0,5">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <ListBox x:Name="ModListBox" Grid.Column="0" Height="120" Margin="0,0,5,0"
+                                <!-- Removed AutoStart/Restart Checkboxes -->
+                                <GroupBox Header="Mods" Margin="0,15,0,5">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <ListBox x:Name="ModListBox" Grid.Column="0" Height="120" Margin="0,0,5,0"
                                           SelectionChanged="ModListBox_SelectionChanged"
                                           MouseDoubleClick="ModListBox_MouseDoubleClick" ToolTip="Double-click to copy Mod ID"/>
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                        <Button x:Name="AddModButton" Content="Add Mod" Click="AddMod_Click" Margin="0,0,0,5" Width="75"/>
-                                        <Button x:Name="RemoveModButton" Content="Remove" Click="RemoveMod_Click" Margin="0,0,0,5" Width="75" IsEnabled="False"/>
-                                        <Button x:Name="ModUpButton" Content="Up ▲" Click="ModMove_Click" Tag="Up" Margin="0,10,0,5" Width="75" IsEnabled="true"/>
-                                        <Button x:Name="ModDownButton" Content="Down ▼" Click="ModMove_Click" Tag="Down" Margin="0,0,0,5" Width="75" IsEnabled="true"/>
-                                    </StackPanel>
-                                </Grid>
-                            </GroupBox>
-                            <Separator Margin="0,10"/>
-                            <Button x:Name="LaunchServerButton" Content="Launch Server" Click="LaunchServer_Click" Padding="10,5" BorderThickness="0" Margin="0,5,0,5" ToolTip="Start the selected ARK server"/>
-                            <Button x:Name="ValidateUpdateServerButton" Content="Validate/Update Server" Click="ValidateUpdateServer_Click" Padding="10,5" BorderThickness="0" Margin="0,0,0,5" ToolTip="Use SteamCMD to check for and download server updates and mods"/>
-                            <Button x:Name="TerminateServerButton" Content="Terminate Server" Click="TerminateServer_Click" Padding="10,5" BorderThickness="0" Margin="0,0,0,5" ToolTip="Stop the currently running server process"/>
-                        </StackPanel>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <Button x:Name="AddModButton" Content="Add Mod" Click="AddMod_Click" Margin="0,0,0,5" Width="75"/>
+                                            <Button x:Name="RemoveModButton" Content="Remove" Click="RemoveMod_Click" Margin="0,0,0,5" Width="75" IsEnabled="False"/>
+                                            <Button x:Name="ModUpButton" Content="Up ▲" Click="ModMove_Click" Tag="Up" Margin="0,10,0,5" Width="75" IsEnabled="true"/>
+                                            <Button x:Name="ModDownButton" Content="Down ▼" Click="ModMove_Click" Tag="Down" Margin="0,0,0,5" Width="75" IsEnabled="true"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </GroupBox>
+                                <Separator Margin="0,10"/>
+                                <Button x:Name="LaunchServerButton" Content="Launch Server" Click="LaunchServer_Click" Padding="10,5" BorderThickness="0" Margin="0,5,0,5" ToolTip="Start the selected ARK server"/>
+                                <Button x:Name="ValidateUpdateServerButton" Content="Validate/Update Server" Click="ValidateUpdateServer_Click" Padding="10,5" BorderThickness="0" Margin="0,0,0,5" ToolTip="Use SteamCMD to check for and download server updates and mods"/>
+                                <Button x:Name="TerminateServerButton" Content="Terminate Server" Click="TerminateServer_Click" Padding="10,5" BorderThickness="0" Margin="0,0,0,5" ToolTip="Stop the currently running server process"/>
+                            </StackPanel>
+                        </Border>
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem Header="Server Settings">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <Border CornerRadius="5" Margin="10" Background="Transparent">
+                            <StackPanel Margin="5" x:Name="ServerSettingsPanel" PreviewMouseWheel="SettingsPanel_PreviewMouseWheel">
+                                <TextBlock Text="Update and Validate the Server First..." VerticalAlignment="Center" HorizontalAlignment="Center" FontStyle="Italic"/>
+                            </StackPanel>
+                        </Border>
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem Header="Game Settings">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <Border CornerRadius="5" Margin="5" Background="Transparent">
+                            <StackPanel Margin="10" x:Name="GameSettingsPanel" PreviewMouseWheel="SettingsPanel_PreviewMouseWheel"/>
+                        </Border>
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem Header="User Settings">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <Border CornerRadius="5" Margin="5" Background="Transparent">
+                            <StackPanel Margin="10" x:Name="UserSettingsPanel" PreviewMouseWheel="SettingsPanel_PreviewMouseWheel"/>
+                        </Border>
+                    </ScrollViewer>
+                </TabItem>
+                <TabItem Header="Console">
+                    <Border CornerRadius="5" Margin="5">
+                        <DockPanel Margin="5">
+                            <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,10,0,0">
+                                <TextBox x:Name="CommandInput" Width="400" Margin="0,0,5,0" MinWidth="200" BorderThickness="1" VerticalContentAlignment="Center" KeyDown="CommandInput_KeyDown"/>
+                                <Button x:Name="SendCommandButton" Content="Send Command" Click="SendCommand_Click" Padding="10,5" BorderThickness="0" ToolTip="Send command via RCON"/>
+                            </StackPanel>
+                            <TextBox x:Name="ConsoleOutput" IsReadOnly="True" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" BorderThickness="0" TextWrapping="NoWrap" AcceptsReturn="True" />
+                        </DockPanel>
                     </Border>
-                </ScrollViewer>
-            </TabItem>
-            <TabItem Header="Server Settings">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border CornerRadius="5" Margin="10" Background="Transparent">
-                        <StackPanel Margin="5" x:Name="ServerSettingsPanel" PreviewMouseWheel="SettingsPanel_PreviewMouseWheel">
-                            <TextBlock Text="Update and Validate the Server First..." VerticalAlignment="Center" HorizontalAlignment="Center" FontStyle="Italic"/>
-                        </StackPanel>
-                    </Border>
-                </ScrollViewer>
-            </TabItem>
-            <TabItem Header="Game Settings">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border CornerRadius="5" Margin="5" Background="Transparent">
-                        <StackPanel Margin="10" x:Name="GameSettingsPanel" PreviewMouseWheel="SettingsPanel_PreviewMouseWheel"/>
-                    </Border>
-                </ScrollViewer>
-            </TabItem>
-            <TabItem Header="User Settings">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <Border CornerRadius="5" Margin="5" Background="Transparent">
-                        <StackPanel Margin="10" x:Name="UserSettingsPanel" PreviewMouseWheel="SettingsPanel_PreviewMouseWheel"/>
-                    </Border>
-                </ScrollViewer>
-            </TabItem>
-            <TabItem Header="Console">
-                <Border CornerRadius="5" Margin="5">
-                    <DockPanel Margin="5">
-                        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,10,0,0">
-                            <TextBox x:Name="CommandInput" Width="400" Margin="0,0,5,0" MinWidth="200" BorderThickness="1" VerticalContentAlignment="Center" KeyDown="CommandInput_KeyDown"/>
-                            <Button x:Name="SendCommandButton" Content="Send Command" Click="SendCommand_Click" Padding="10,5" BorderThickness="0" ToolTip="Send command via RCON"/>
-                        </StackPanel>
-                        <TextBox x:Name="ConsoleOutput" IsReadOnly="True" VerticalScrollBarVisibility="Visible" HorizontalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12" BorderThickness="0" TextWrapping="NoWrap" AcceptsReturn="True" />
-                    </DockPanel>
-                </Border>
-            </TabItem>
-            <TabItem Header="Settings">
-                <Border CornerRadius="5" Margin="5" Padding="10">
-                    <StackPanel>
-                        <Grid Margin="0,20,70,50">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="auto"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="auto"/>
-                                <RowDefinition Height="auto"/>
-                                <RowDefinition Height="auto"/>
-                                <RowDefinition Height="auto"/>
-                            </Grid.RowDefinitions>
-                            <!--Label Content="Language:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </TabItem>
+                <TabItem Header="Settings">
+                    <Border CornerRadius="5" Margin="5" Padding="10">
+                        <StackPanel>
+                            <Grid Margin="0,20,70,50">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="auto"/>
+                                    <RowDefinition Height="auto"/>
+                                    <RowDefinition Height="auto"/>
+                                    <RowDefinition Height="auto"/>
+                                </Grid.RowDefinitions>
+                                <!--Label Content="Language:" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <ComboBox x:Name="LanguageComboBox" SelectionChanged="LanguageComboBox_SelectionChanged" SelectedIndex="0" Margin="0,0,0,10">
                                 <ComboBoxItem Content="English" Tag="en-US"/>
                                 <ComboBoxItem Content="Spanish" Tag="es-ES"/>
@@ -201,35 +203,35 @@
                                 <ComboBoxItem Content="German" Tag="de-DE "/>
                                 <ComboBoxItem Content="Italian" Tag="it-IT"/>
                             </ComboBox-->
-                            <Label Content="Auto Updates:" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <CheckBox x:Name="AutoUpdateCheckBox" Margin="10,0,0,0" IsChecked="True" Grid.Column="1"/>
-                            <Label Content="Start With Windows:" FontWeight="SemiBold" VerticalAlignment="Center" Grid.Row="1"/>
-                            <CheckBox x:Name="StartWithWindows" Margin="10,0,0,0" IsChecked="True" Grid.Row="1" Grid.Column="1"/>
-                            <Label Content="Minimize To Tray:" FontWeight="SemiBold" VerticalAlignment="Center" Grid.Row="2"/>
-                            <CheckBox x:Name="MinimizeToTray" Margin="10,0,0,0" IsChecked="True" Grid.Row="2" Grid.Column="1"/>
-                            <Label Content="Start Minimized:" FontWeight="SemiBold" VerticalAlignment="Center" Grid.Row="3"/>
-                            <CheckBox x:Name="StartMinimized" Margin="10,0,0,0" IsChecked="True" Grid.Row="3" Grid.Column="1"/>
-                        </Grid>
-                        <Label Content="Themes" FontWeight="SemiBold" />
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <ListBox x:Name="ThemeListBox" Grid.Column="0" Height="200" SelectionChanged="ThemeListBox_SelectionChanged" MouseDoubleClick="ThemeListBox_MouseDoubleClick"/>
-                            <StackPanel Grid.Column="1" Margin="5,0,0,0">
-                                <Button Content="Apply" Click="ApplyTheme_Click" Width="70" Margin="0,0,0,5" />
-                                <Button Content="New" Click="NewTheme_Click" Width="70" Margin="0,0,0,5" />
-                                <Button Content="Copy" Click="SaveTheme_Click" Width="70" Margin="0,0,0,5" />
-                                <Button Content="Delete" Click="DeleteTheme_Click" Width="70" Margin="0,0,0,5" />
-                                <Button x:Name="EditButton" Content="Edit" Click="EditTheme_Click" Width="70" Margin="0,0,0,5" />
-                            </StackPanel>
-                        </Grid>
-                        <TextBlock Text="Save uses current application resources. Theme files are stored in ./Themes" Margin="0,10,0,0" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-            </TabItem>
-        </TabControl>
+                                <Label Content="Auto Updates:" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <CheckBox x:Name="AutoUpdateCheckBox" Margin="10,0,0,0" IsChecked="True" Grid.Column="1"/>
+                                <Label Content="Start With Windows:" FontWeight="SemiBold" VerticalAlignment="Center" Grid.Row="1"/>
+                                <CheckBox x:Name="StartWithWindows" Margin="10,0,0,0" IsChecked="True" Grid.Row="1" Grid.Column="1"/>
+                                <Label Content="Minimize To Tray:" FontWeight="SemiBold" VerticalAlignment="Center" Grid.Row="2"/>
+                                <CheckBox x:Name="MinimizeToTray" Margin="10,0,0,0" IsChecked="True" Grid.Row="2" Grid.Column="1"/>
+                                <Label Content="Start Minimized:" FontWeight="SemiBold" VerticalAlignment="Center" Grid.Row="3"/>
+                                <CheckBox x:Name="StartMinimized" Margin="10,0,0,0" IsChecked="True" Grid.Row="3" Grid.Column="1"/>
+                            </Grid>
+                            <Label Content="Themes" FontWeight="SemiBold" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ListBox x:Name="ThemeListBox" Grid.Column="0" Height="200" SelectionChanged="ThemeListBox_SelectionChanged" MouseDoubleClick="ThemeListBox_MouseDoubleClick"/>
+                                <StackPanel Grid.Column="1" Margin="5,0,0,0">
+                                    <Button Content="Apply" Click="ApplyTheme_Click" Width="70" Margin="0,0,0,5" />
+                                    <Button Content="New" Click="NewTheme_Click" Width="70" Margin="0,0,0,5" />
+                                    <Button Content="Copy" Click="SaveTheme_Click" Width="70" Margin="0,0,0,5" />
+                                    <Button Content="Delete" Click="DeleteTheme_Click" Width="70" Margin="0,0,0,5" />
+                                    <Button x:Name="EditButton" Content="Edit" Click="EditTheme_Click" Width="70" Margin="0,0,0,5" />
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="Save uses current application resources. Theme files are stored in ./Themes" Margin="0,10,0,0" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </TabItem>
+            </TabControl>
         </Border>
     </Grid>
 </local:BaseWindow>

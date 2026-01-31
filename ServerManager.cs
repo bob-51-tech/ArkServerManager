@@ -31,7 +31,7 @@ namespace ArkServerManager
         private readonly TextBox _consoleOutput;
         private readonly Dispatcher _dispatcher; // UI thread dispatcher
 
-        private List<ArkServer> _servers;
+        public List<ArkServer> _servers;
         private ArkServer _currentServer;
         private Process _serverProcess;
         private Process _steamCmdProcess; // Ensure only one SteamCMD runs at a time
@@ -76,6 +76,113 @@ namespace ArkServerManager
         /// <summary>
         /// Launches the currently selected server.
         /// </summary>
+
+        // public async Task LaunchServer()
+        // {
+        //     if (_currentServer == null)
+        //     {
+        //         LogOutput("ERROR: No server selected. Cannot launch.");
+        //         return;
+        //     }
+        //
+        //     if (_serverProcess != null && !_serverProcess.HasExited)
+        //     {
+        //         LogOutput($"Server '{_currentServer.Name}' is already running (PID: {_serverProcess.Id}).");
+        //         return;
+        //     }
+        //
+        //     // Ensure latest settings are saved before launch
+        //     SaveServerProfiles(); // Save all profiles just in case basic settings changed
+        //     LogOutput($"Preparing to launch server '{_currentServer.Name}'...");
+        //
+        //     // 1. Generate INI Files
+        //     if (!await GenerateIniFilesAsync(_currentServer))
+        //     {
+        //         return; // Error already logged in GenerateIniFilesAsync
+        //     }
+        //
+        //     // 2. Check Server Executable Exists (and optionally validate/update)
+        //     string serverExePath = Path.Combine(_currentServer.InstallPath, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe");
+        //     if (!File.Exists(serverExePath))
+        //     {
+        //         LogOutput($"Server executable not found at '{serverExePath}'. Attempting validation/update...");
+        //         bool setupSuccess = await SetupServerDependencies(_currentServer);
+        //         if (!setupSuccess || !File.Exists(serverExePath))
+        //         {
+        //             LogOutput($"ERROR: Server executable missing or validation failed for '{_currentServer.Name}'. Cannot launch.");
+        //             return;
+        //         }
+        //         LogOutput("Server executable found after validation.");
+        //     }
+        //
+        //     // 3. Construct Launch Arguments
+        //     string arguments = BuildLaunchArguments(_currentServer);
+        //     LogOutput($"Server Launch Arguments: {arguments}");
+        //
+        //     // 4. Start the Process
+        //     try
+        //     {
+        //         _serverProcess = new Process
+        //         {
+        //             StartInfo = new ProcessStartInfo
+        //             {
+        //                 FileName = serverExePath,
+        //                 Arguments = arguments,
+        //                 WorkingDirectory = Path.GetDirectoryName(serverExePath), // Crucial for the server finding its files
+        //                 RedirectStandardOutput = true,
+        //                 RedirectStandardError = true,
+        //                 UseShellExecute = false, // Required for redirection
+        //                 CreateNoWindow = true,   // Run in background
+        //                 StandardOutputEncoding = Encoding.UTF8, // Handle various characters
+        //                 StandardErrorEncoding = Encoding.UTF8
+        //             },
+        //             EnableRaisingEvents = true // Needed for Exited event
+        //         };
+        //
+        //         // Attach event handlers BEFORE starting
+        //         _serverProcess.OutputDataReceived += ServerProcess_OutputDataReceived;
+        //         _serverProcess.ErrorDataReceived += ServerProcess_ErrorDataReceived;
+        //         _serverProcess.Exited += ServerProcess_Exited;
+        //
+        //         bool started = _serverProcess.Start();
+        //
+        //         if (started)
+        //         {
+        //             _serverProcess.BeginOutputReadLine();
+        //             _serverProcess.BeginErrorReadLine();
+        //             _currentServer.RunningProcess = _serverProcess;
+        //             LogOutput($"Server '{_currentServer.Name}' process started successfully (PID: {_serverProcess.Id}).");
+        //             // Update UI state via dispatcher
+        //             _dispatcher.InvokeAsync(() => (Application.Current.MainWindow as MainWindow)?.UpdateUIFromSelection());
+        //         }
+        //         else
+        //         {
+        //             LogOutput($"ERROR: Process.Start() returned false for '{_currentServer.Name}'. Launch failed.");
+        //             _serverProcess.Dispose(); // Clean up the failed process object
+        //             _serverProcess = null;
+        //
+        //             if (_currentServer != null)
+        //             {
+        //                 _currentServer.RunningProcess = null;
+        //             }
+        //             _dispatcher.InvokeAsync(() => (Application.Current.MainWindow as MainWindow)?.UpdateUIFromSelection()); // Update UI on failure too
+        //         }
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         LogOutput($"FATAL LAUNCH ERROR for '{_currentServer.Name}': {ex.Message}");
+        //         LogOutput($"Details: {ex.StackTrace}"); // More detail for debugging
+        //         _serverProcess?.Dispose(); // Ensure disposal even on exception
+        //         _serverProcess = null;
+        //         // Update UI state via dispatcher
+        //         if (_currentServer != null)
+        //         {
+        //             _currentServer.RunningProcess = null;
+        //         }
+        //         _dispatcher.InvokeAsync(() => (Application.Current.MainWindow as MainWindow)?.UpdateUIFromSelection()); // Update UI on exception
+        //     }
+        // }
+
         public async Task LaunchServer()
         {
             if (_currentServer == null)
@@ -84,23 +191,20 @@ namespace ArkServerManager
                 return;
             }
 
-            if (_serverProcess != null && !_serverProcess.HasExited)
+            // Check if THIS specific server is already running
+            if (_currentServer.RunningProcess != null && !_currentServer.RunningProcess.HasExited)
             {
-                LogOutput($"Server '{_currentServer.Name}' is already running (PID: {_serverProcess.Id}).");
+                LogOutput($"Server '{_currentServer.Name}' is already running (PID: {_currentServer.RunningProcess.Id}).");
                 return;
             }
 
-            // Ensure latest settings are saved before launch
-            SaveServerProfiles(); // Save all profiles just in case basic settings changed
+            SaveServerProfiles(); // Save changes before launch
             LogOutput($"Preparing to launch server '{_currentServer.Name}'...");
 
             // 1. Generate INI Files
-            if (!await GenerateIniFilesAsync(_currentServer))
-            {
-                return; // Error already logged in GenerateIniFilesAsync
-            }
+            if (!await GenerateIniFilesAsync(_currentServer)) return;
 
-            // 2. Check Server Executable Exists (and optionally validate/update)
+            // 2. Validate Executable
             string serverExePath = Path.Combine(_currentServer.InstallPath, "ShooterGame", "Binaries", "Win64", "ArkAscendedServer.exe");
             if (!File.Exists(serverExePath))
             {
@@ -111,7 +215,6 @@ namespace ArkServerManager
                     LogOutput($"ERROR: Server executable missing or validation failed for '{_currentServer.Name}'. Cannot launch.");
                     return;
                 }
-                LogOutput("Server executable found after validation.");
             }
 
             // 3. Construct Launch Arguments
@@ -121,122 +224,150 @@ namespace ArkServerManager
             // 4. Start the Process
             try
             {
-                _serverProcess = new Process
+                // Capture the specific server instance in a local variable for the event handlers
+                // This ensures the event handler knows exactly WHICH server exited, even if you select a different one in the UI later.
+                ArkServer serverInstance = _currentServer;
+
+                var process = new Process
                 {
                     StartInfo = new ProcessStartInfo
                     {
                         FileName = serverExePath,
                         Arguments = arguments,
-                        WorkingDirectory = Path.GetDirectoryName(serverExePath), // Crucial for the server finding its files
+                        WorkingDirectory = Path.GetDirectoryName(serverExePath),
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
-                        UseShellExecute = false, // Required for redirection
-                        CreateNoWindow = true,   // Run in background
-                        StandardOutputEncoding = Encoding.UTF8, // Handle various characters
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        StandardOutputEncoding = Encoding.UTF8,
                         StandardErrorEncoding = Encoding.UTF8
                     },
-                    EnableRaisingEvents = true // Needed for Exited event
+                    EnableRaisingEvents = true
                 };
 
-                // Attach event handlers BEFORE starting
-                _serverProcess.OutputDataReceived += ServerProcess_OutputDataReceived;
-                _serverProcess.ErrorDataReceived += ServerProcess_ErrorDataReceived;
-                _serverProcess.Exited += ServerProcess_Exited;
-
-                bool started = _serverProcess.Start();
-
-                if (started)
+                // Attach Event Handlers using Lambdas
+                process.OutputDataReceived += (s, e) =>
                 {
-                    _serverProcess.BeginOutputReadLine();
-                    _serverProcess.BeginErrorReadLine();
-                    _currentServer.RunningProcess = _serverProcess;
-                    LogOutput($"Server '{_currentServer.Name}' process started successfully (PID: {_serverProcess.Id}).");
-                    // Update UI state via dispatcher
+                    if (e.Data != null) LogOutput($"[{serverInstance.Name}] {e.Data}");
+                };
+
+                process.ErrorDataReceived += (s, e) =>
+                {
+                    if (e.Data != null) LogOutput($"[{serverInstance.Name} ERR] {e.Data}");
+                };
+
+                process.Exited += (s, e) =>
+                {
+                    HandleServerExit(serverInstance, process);
+                };
+
+                if (process.Start())
+                {
+                    process.BeginOutputReadLine();
+                    process.BeginErrorReadLine();
+
+                    // Assign the running process to the server object
+                    serverInstance.RunningProcess = process;
+
+                    LogOutput($"Server '{serverInstance.Name}' started successfully (PID: {process.Id}).");
+
+                    // Update UI
                     _dispatcher.InvokeAsync(() => (Application.Current.MainWindow as MainWindow)?.UpdateUIFromSelection());
                 }
                 else
                 {
-                    LogOutput($"ERROR: Process.Start() returned false for '{_currentServer.Name}'. Launch failed.");
-                    _serverProcess.Dispose(); // Clean up the failed process object
-                    _serverProcess = null;
-
-                    if (_currentServer != null)
-                    {
-                        _currentServer.RunningProcess = null;
-                    }
-                    _dispatcher.InvokeAsync(() => (Application.Current.MainWindow as MainWindow)?.UpdateUIFromSelection()); // Update UI on failure too
+                    LogOutput($"ERROR: Process.Start() returned false for '{serverInstance.Name}'.");
                 }
             }
             catch (Exception ex)
             {
                 LogOutput($"FATAL LAUNCH ERROR for '{_currentServer.Name}': {ex.Message}");
-                LogOutput($"Details: {ex.StackTrace}"); // More detail for debugging
-                _serverProcess?.Dispose(); // Ensure disposal even on exception
-                _serverProcess = null;
-                // Update UI state via dispatcher
-                if (_currentServer != null)
-                {
-                    _currentServer.RunningProcess = null;
-                }
-                _dispatcher.InvokeAsync(() => (Application.Current.MainWindow as MainWindow)?.UpdateUIFromSelection()); // Update UI on exception
+                _currentServer.RunningProcess = null;
+                _dispatcher.InvokeAsync(() => (Application.Current.MainWindow as MainWindow)?.UpdateUIFromSelection());
             }
         }
 
         /// <summary>
         /// Forcefully terminates the currently running server process.
         /// </summary>
+
+        //public void TerminateServer()
+        //{
+        //    if (_serverProcess == null || _serverProcess.HasExited)
+        //    {
+        //        LogOutput("No server process appears to be running.");
+        //        // Ensure UI reflects this state potentially, even if called erroneously
+        //        _dispatcher.InvokeAsync(() => (Application.Current.MainWindow as MainWindow)?.UpdateUIFromSelection());
+        //        return;
+        //    }
+        //
+        //    // Capture info before potential disposal in Exited event
+        //    Process processToKill = _serverProcess;
+        //    string serverName = _currentServer?.Name ?? "Unknown Server";
+        //    int processId = -1;
+        //    try { processId = processToKill.Id; } catch { /* Ignore error getting ID if process is weird */ }
+        //
+        //    LogOutput($"Attempting to terminate server '{serverName}' (PID: {processId})...");
+        //
+        //    try
+        //    {
+        //        processToKill.Kill();
+        //        LogOutput($"Kill signal sent to process PID: {processId}. Waiting for Exited event...");
+        //        // Don't nullify _serverProcess here; let the Exited event handle it cleanly.
+        //    }
+        //    catch (InvalidOperationException)
+        //    {
+        //        LogOutput($"WARN: Process (PID: {processId}) may have already exited before Kill() was called.");
+        //        if (_serverProcess == processToKill)
+        //        {
+        //            _serverProcess?.Dispose();
+        //            _serverProcess = null;
+        //            LogOutput("Manually cleared server process reference after Kill failed (already exited?).");
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        LogOutput($"ERROR terminating server '{serverName}' (PID: {processId}): {ex.Message}");
+        //        if (_serverProcess == processToKill)
+        //        {
+        //            _serverProcess?.Dispose();
+        //            _serverProcess = null;
+        //            LogOutput("Manually cleared server process reference after Kill exception.");
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        // Ensure UI updates regardless of kill success/failure
+        //        _dispatcher.InvokeAsync(() => (Application.Current.MainWindow as MainWindow)?.UpdateUIFromSelection());
+        //    }
+        //}
+
+        // --- Process Event Handlers ---
+
         public void TerminateServer()
         {
-            if (_serverProcess == null || _serverProcess.HasExited)
+            // Check if the CURRENTLY SELECTED server is running
+            if (_currentServer == null || _currentServer.RunningProcess == null || _currentServer.RunningProcess.HasExited)
             {
-                LogOutput("No server process appears to be running.");
-                // Ensure UI reflects this state potentially, even if called erroneously
+                LogOutput("The currently selected server is not running.");
                 _dispatcher.InvokeAsync(() => (Application.Current.MainWindow as MainWindow)?.UpdateUIFromSelection());
                 return;
             }
 
-            // Capture info before potential disposal in Exited event
-            Process processToKill = _serverProcess;
-            string serverName = _currentServer?.Name ?? "Unknown Server";
-            int processId = -1;
-            try { processId = processToKill.Id; } catch { /* Ignore error getting ID if process is weird */ }
-
-            LogOutput($"Attempting to terminate server '{serverName}' (PID: {processId})...");
+            var proc = _currentServer.RunningProcess;
+            LogOutput($"Terminating server '{_currentServer.Name}' (PID: {proc.Id})...");
 
             try
             {
-                processToKill.Kill();
-                LogOutput($"Kill signal sent to process PID: {processId}. Waiting for Exited event...");
-                // Don't nullify _serverProcess here; let the Exited event handle it cleanly.
-            }
-            catch (InvalidOperationException)
-            {
-                LogOutput($"WARN: Process (PID: {processId}) may have already exited before Kill() was called.");
-                if (_serverProcess == processToKill)
-                {
-                    _serverProcess?.Dispose();
-                    _serverProcess = null;
-                    LogOutput("Manually cleared server process reference after Kill failed (already exited?).");
-                }
+                proc.Kill();
+                // The Exited event (HandleServerExit) will run automatically after the kill
+                // and handle the cleanup and UI updates.
             }
             catch (Exception ex)
             {
-                LogOutput($"ERROR terminating server '{serverName}' (PID: {processId}): {ex.Message}");
-                if (_serverProcess == processToKill)
-                {
-                    _serverProcess?.Dispose();
-                    _serverProcess = null;
-                    LogOutput("Manually cleared server process reference after Kill exception.");
-                }
-            }
-            finally
-            {
-                // Ensure UI updates regardless of kill success/failure
-                _dispatcher.InvokeAsync(() => (Application.Current.MainWindow as MainWindow)?.UpdateUIFromSelection());
+                LogOutput($"Error terminating process: {ex.Message}");
             }
         }
-
-        // --- Process Event Handlers ---
 
         private void ServerProcess_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
@@ -418,74 +549,160 @@ namespace ArkServerManager
             }
         }
 
+        // private string BuildLaunchArguments(ArkServer server)
+        // {
+        //     var argsBuilder = new StringBuilder();
+        //
+        //     // Map is the first argument, no prefix
+        //     argsBuilder.Append(server.Map ?? "TheIsland_WP"); // Default map if null
+        //
+        //     // Session Name (handle quotes)
+        //     string sessionName = server.Name ?? "ARK Server";
+        //     if (sessionName.Contains(' ')) { sessionName = $"\"{sessionName}\""; }
+        //     argsBuilder.Append($"?SessionName={sessionName}");
+        //
+        //     // Ports
+        //     argsBuilder.Append($"?Port={server.GamePort}");
+        //     argsBuilder.Append($"?QueryPort={server.QueryPort}");
+        //
+        //     // Player Limit
+        //     argsBuilder.Append($"?MaxPlayers={server.PlayerLimit}");
+        //
+        //     // Basic required args
+        //     argsBuilder.Append(" -log"); // Enable server logging to console/files
+        //     argsBuilder.Append(" -NoBattlEye"); // Often needed for unofficial servers, adjust if BattlEye is desired/required
+        //     if (server.ServerSettings.bAllowFlyerSpeedLeveling || server.GameSettings.bAllowFlyerSpeedLeveling)
+        //         argsBuilder.Append(" -AllowFlyerSpeedLeveling"); // 
+        //
+        //     // Mods (carefully format -mods="id1,id2")
+        //     var validMods = server.Mods?.Where(m => !string.IsNullOrWhiteSpace(m) && long.TryParse(m, out _)).ToList() ?? new List<string>();
+        //     if (validMods.Any())
+        //     {
+        //         string modsArgument = $"-mods={string.Join(",", validMods)}"; // No quotes around the value needed usually
+        //         argsBuilder.Append($" {modsArgument}");
+        //         LogOutput($"Adding Mods Argument: {modsArgument}");
+        //     }
+        //     else
+        //     {
+        //         LogOutput("No valid mods configured or found.");
+        //     }
+        //
+        //     // RCON
+        //     if (server.ServerSettings?.RCONEnabled == true)
+        //     {
+        //         argsBuilder.Append($" -EnableRCON -RCONPort={server.RconPort}");
+        //         LogOutput($"Adding RCON Argument: -EnableRCON -RCONPort={server.RconPort}");
+        //     }
+        //
+        //     // MultiHome (Specific IP Binding)
+        //     if (!string.IsNullOrEmpty(server.IpAddress) && server.IpAddress != "0.0.0.0")
+        //     {
+        //         if (IPAddress.TryParse(server.IpAddress, out _))
+        //         {
+        //             argsBuilder.Append($" -MultiHome={server.IpAddress}");
+        //             LogOutput($"Adding MultiHome Argument: -MultiHome={server.IpAddress}");
+        //         }
+        //         else
+        //         {
+        //             LogOutput($"WARN: Invalid IP address format '{server.IpAddress}' provided. Ignoring MultiHome argument.");
+        //         }
+        //     }
+        //     else
+        //     {
+        //         LogOutput("No specific IP address provided (or 0.0.0.0), server will bind to default.");
+        //     }
+        //
+        //     // Add other common/useful arguments (optional)
+        //     argsBuilder.Append(" -UseCache");
+        //     // argsBuilder.Append(" -AllowAnyoneBabyImprintCuddle"); // If you want this via command line instead of INI
+        //
+        //     return argsBuilder.ToString();
+        // }
+
         private string BuildLaunchArguments(ArkServer server)
         {
             var argsBuilder = new StringBuilder();
 
-            // Map is the first argument, no prefix
-            argsBuilder.Append(server.Map ?? "TheIsland_WP"); // Default map if null
-
-            // Session Name (handle quotes)
+            // Map and Session Name
+            argsBuilder.Append(server.Map ?? "TheIsland_WP");
             string sessionName = server.Name ?? "ARK Server";
             if (sessionName.Contains(' ')) { sessionName = $"\"{sessionName}\""; }
             argsBuilder.Append($"?SessionName={sessionName}");
 
-            // Ports
+            // Network Ports
             argsBuilder.Append($"?Port={server.GamePort}");
             argsBuilder.Append($"?QueryPort={server.QueryPort}");
-
-            // Player Limit
             argsBuilder.Append($"?MaxPlayers={server.PlayerLimit}");
 
-            // Basic required args
-            argsBuilder.Append(" -log"); // Enable server logging to console/files
-            argsBuilder.Append(" -NoBattlEye"); // Often needed for unofficial servers, adjust if BattlEye is desired/required
-            if (server.ServerSettings.bAllowFlyerSpeedLeveling || server.GameSettings.bAllowFlyerSpeedLeveling)
-                argsBuilder.Append(" -AllowFlyerSpeedLeveling"); // 
+            // --- CLUSTERING LOGIC ---
+            // If a ClusterId is provided, enable clustering
+            if (!string.IsNullOrWhiteSpace(server.ClusterId))
+            {
+                argsBuilder.Append($" -clusterid={server.ClusterId}");
 
-            // Mods (carefully format -mods="id1,id2")
+                // IMPORTANT: When running multiple servers from different folders, they usually
+                // cannot see each other's cluster data. We force them to share a folder named "ClusterData"
+                // inside your Manager's folder.
+                string sharedClusterPath = Path.Combine(_appDirectory, "ClusterData");
+                Directory.CreateDirectory(sharedClusterPath); // Ensure folder exists
+
+                argsBuilder.Append($" -ClusterDirOverride=\"{sharedClusterPath}\"");
+
+                // Helps prevents "Download Disabled" errors
+                argsBuilder.Append(" -NoTransferFromFiltering");
+
+                LogOutput($"Clustering Enabled: ID '{server.ClusterId}', Shared Path: '{sharedClusterPath}'");
+            }
+
+            // Standard Flags
+            argsBuilder.Append(" -log");
+            argsBuilder.Append(" -NoBattlEye");
+
+            // Speed Leveling
+            if (server.ServerSettings.bAllowFlyerSpeedLeveling || server.GameSettings.bAllowFlyerSpeedLeveling)
+                argsBuilder.Append(" -AllowFlyerSpeedLeveling");
+
+            // Mods
             var validMods = server.Mods?.Where(m => !string.IsNullOrWhiteSpace(m) && long.TryParse(m, out _)).ToList() ?? new List<string>();
             if (validMods.Any())
             {
-                string modsArgument = $"-mods={string.Join(",", validMods)}"; // No quotes around the value needed usually
-                argsBuilder.Append($" {modsArgument}");
-                LogOutput($"Adding Mods Argument: {modsArgument}");
-            }
-            else
-            {
-                LogOutput("No valid mods configured or found.");
+                argsBuilder.Append($" -mods={string.Join(",", validMods)}");
             }
 
             // RCON
             if (server.ServerSettings?.RCONEnabled == true)
             {
                 argsBuilder.Append($" -EnableRCON -RCONPort={server.RconPort}");
-                LogOutput($"Adding RCON Argument: -EnableRCON -RCONPort={server.RconPort}");
             }
 
-            // MultiHome (Specific IP Binding)
+            // MultiHome IP
             if (!string.IsNullOrEmpty(server.IpAddress) && server.IpAddress != "0.0.0.0")
             {
-                if (IPAddress.TryParse(server.IpAddress, out _))
-                {
+                if (System.Net.IPAddress.TryParse(server.IpAddress, out _))
                     argsBuilder.Append($" -MultiHome={server.IpAddress}");
-                    LogOutput($"Adding MultiHome Argument: -MultiHome={server.IpAddress}");
-                }
-                else
-                {
-                    LogOutput($"WARN: Invalid IP address format '{server.IpAddress}' provided. Ignoring MultiHome argument.");
-                }
-            }
-            else
-            {
-                LogOutput("No specific IP address provided (or 0.0.0.0), server will bind to default.");
             }
 
-            // Add other common/useful arguments (optional)
             argsBuilder.Append(" -UseCache");
-            // argsBuilder.Append(" -AllowAnyoneBabyImprintCuddle"); // If you want this via command line instead of INI
 
             return argsBuilder.ToString();
+        }
+
+        private void HandleServerExit(ArkServer server, Process process)
+        {
+            LogOutput($"Server '{server.Name}' (PID: {process.Id}) has exited.");
+
+            _dispatcher.InvokeAsync(() =>
+            {
+                // Clean up the reference on the server object
+                server.RunningProcess = null;
+                process.Dispose();
+
+                // Only update the UI if the user is currently looking at this server
+                if (_currentServer == server && Application.Current.MainWindow is MainWindow mainWin)
+                {
+                    mainWin.UpdateUIFromSelection();
+                }
+            });
         }
 
         #endregion

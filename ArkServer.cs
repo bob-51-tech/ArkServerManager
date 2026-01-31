@@ -27,7 +27,7 @@ namespace ArkServerManager
         private int _gamePort = 7777;   // Default UE game port
         private int _rconPort = 27020;  // Default RCON port
         private string _ipAddress = "0.0.0.0"; // Default: Bind to all available network interfaces
-
+        private string _clusterId = "Cluster"; // Default Cluster ID
         // --- Public Properties ---
 
         /// <summary>
@@ -158,6 +158,15 @@ namespace ArkServerManager
                 // Only update if the validated IP is different
                 SetField(ref _ipAddress, validatedIp);
             }
+        }
+
+        /// <summary>
+        /// The ID used to link servers together for cross-travel.
+        /// </summary>
+        public string ClusterId
+        {
+            get => _clusterId;
+            set => SetField(ref _clusterId, value);
         }
 
         /// <summary>

@@ -724,6 +724,7 @@ namespace ArkServerManager
                     RconPortTextBox.Text = serverIsSelected ? selectedServer.RconPort.ToString() : "";
                     if (!serverIsSelected) IpAddressTextBox.Text = "N/A";
 
+                    ClusterIdTextBox.Text = serverIsSelected ? selectedServer.ClusterId ?? "" : "";
                     AdminPasswordTextBox.Text = serverIsSelected ? selectedServer.ServerSettings?.ServerAdminPassword ?? "" : "";
                     ServerPasswordTextBox.Text = serverIsSelected ? selectedServer.ServerSettings?.ServerPassword ?? "" : "";
                     RconEnabledCheckBox.IsChecked = serverIsSelected ? selectedServer.ServerSettings?.RCONEnabled ?? false : false;
@@ -758,6 +759,7 @@ namespace ArkServerManager
                     GamePortTextBox.IsEnabled = controlsEnabled;
                     RconPortTextBox.IsEnabled = controlsEnabled;
                     IpAddressTextBox.IsEnabled = controlsEnabled;
+                    ClusterIdTextBox.IsEnabled = controlsEnabled;
                     AdminPasswordTextBox.IsEnabled = controlsEnabled;
                     ServerPasswordTextBox.IsEnabled = controlsEnabled;
                     RconEnabledCheckBox.IsEnabled = controlsEnabled;
@@ -852,13 +854,34 @@ namespace ArkServerManager
                             }, System.Windows.Threading.DispatcherPriority.Background);
                         }
                         break;
-                    case nameof(PlayerLimitTextBox): if (int.TryParse(newValue, out int pl) && pl > 0 && currentServer.PlayerLimit != pl) { currentServer.PlayerLimit = pl; changed = true; } break;
-                    case nameof(QueryPortTextBox): if (ushort.TryParse(newValue, out ushort qp) && qp > 0 && currentServer.QueryPort != qp) { currentServer.QueryPort = qp; changed = true; } break;
-                    case nameof(GamePortTextBox): if (ushort.TryParse(newValue, out ushort gp) && gp > 0 && currentServer.GamePort != gp) { currentServer.GamePort = gp; changed = true; } break;
-                    case nameof(RconPortTextBox): if (ushort.TryParse(newValue, out ushort rp) && rp > 0 && currentServer.RconPort != rp) { currentServer.RconPort = rp; changed = true; } break;
-                    case nameof(IpAddressTextBox): if (currentServer.IpAddress != newValue) { currentServer.IpAddress = newValue; changed = true; } break;
-                    case nameof(AdminPasswordTextBox): if (currentServer.ServerSettings != null && currentServer.ServerSettings.ServerAdminPassword != newValue) { currentServer.ServerSettings.ServerAdminPassword = newValue; changed = true; } break;
-                    case nameof(ServerPasswordTextBox): if (currentServer.ServerSettings != null && currentServer.ServerSettings.ServerPassword != newValue) { currentServer.ServerSettings.ServerPassword = newValue; changed = true; } break;
+                    case nameof(ClusterIdTextBox):
+                        if (currentServer.ClusterId != newValue)
+                        {
+                            currentServer.ClusterId = newValue;
+                            changed = true;
+                        }
+                        break;
+                    case nameof(PlayerLimitTextBox):
+                        if (int.TryParse(newValue, out int pl) && pl > 0 && currentServer.PlayerLimit != pl) 
+                        { currentServer.PlayerLimit = pl; changed = true; } break;
+                    case nameof(QueryPortTextBox):
+                        if (ushort.TryParse(newValue, out ushort qp) && qp > 0 && currentServer.QueryPort != qp) 
+                        { currentServer.QueryPort = qp; changed = true; } break;
+                    case nameof(GamePortTextBox):
+                        if (ushort.TryParse(newValue, out ushort gp) && gp > 0 && currentServer.GamePort != gp)
+                        { currentServer.GamePort = gp; changed = true; } break;
+                    case nameof(RconPortTextBox):
+                        if (ushort.TryParse(newValue, out ushort rp) && rp > 0 && currentServer.RconPort != rp) 
+                        { currentServer.RconPort = rp; changed = true; } break;
+                    case nameof(IpAddressTextBox):
+                        if (currentServer.IpAddress != newValue) 
+                        { currentServer.IpAddress = newValue; changed = true; } break;
+                    case nameof(AdminPasswordTextBox):
+                        if (currentServer.ServerSettings != null && currentServer.ServerSettings.ServerAdminPassword != newValue) 
+                        { currentServer.ServerSettings.ServerAdminPassword = newValue; changed = true; } break;
+                    case nameof(ServerPasswordTextBox):
+                        if (currentServer.ServerSettings != null && currentServer.ServerSettings.ServerPassword != newValue)
+                        { currentServer.ServerSettings.ServerPassword = newValue; changed = true; } break;
                 }
             }
             catch (Exception ex) { Debug.WriteLine($"Error handling TextChanged for {textBox.Name}: {ex.Message}"); }
@@ -1005,8 +1028,8 @@ namespace ArkServerManager
         {
             Debug.WriteLine("MainWindow Closing event triggered.");
             LogStatus("Shutting down...");
-            bool serverIsRunning = serverManager.CurrentServer != null && serverManager.CurrentServer.RunningProcess != null && !serverManager.CurrentServer.RunningProcess.HasExited;
-            if (serverIsRunning)
+            bool anyServerRunning = serverManager._servers.Any(s => s.RunningProcess != null && !s.RunningProcess.HasExited);
+            if (anyServerRunning)
             {
                 var result = MessageBox.Show($"The server '{serverManager.CurrentServer.Name}' appears to be running.\n\n" + "Closing the manager will NOT automatically stop the server process.\n\n" + "Do you want to close the manager anyway?", "Server Running", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
                 if (result == MessageBoxResult.No) { e.Cancel = true; LogStatus("Shutdown cancelled by user."); Debug.WriteLine("Window closing cancelled because server is running."); return; }
