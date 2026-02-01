@@ -120,6 +120,12 @@
                                 <TextBox x:Name="ServerPasswordTextBox" Width="200" HorizontalAlignment="Left" TextChanged="BasicSetting_TextChanged" Margin="0,0,0,10"/>
                                 <CheckBox x:Name="RconEnabledCheckBox" Content="Enable RCON" Margin="0,0,0,10" Checked="BasicSetting_CheckBoxChanged" Unchecked="BasicSetting_CheckBoxChanged"/>
 
+                                <Label Content="Custom Launch Arguments:" FontWeight="SemiBold"/>
+                                <TextBox x:Name="CustomArgsTextBox" 
+         Margin="0,0,0,10" 
+         TextChanged="BasicSetting_TextChanged" 
+         ToolTip="Enter extra flags here (e.g. -preventhibernation -ForceAllowCaveFlyers)"/>
+
                                 <!-- Removed AutoStart/Restart Checkboxes -->
                                 <GroupBox Header="Mods" Margin="0,15,0,5">
                                     <Grid>

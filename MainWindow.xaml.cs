@@ -728,6 +728,7 @@ namespace ArkServerManager
                     AdminPasswordTextBox.Text = serverIsSelected ? selectedServer.ServerSettings?.ServerAdminPassword ?? "" : "";
                     ServerPasswordTextBox.Text = serverIsSelected ? selectedServer.ServerSettings?.ServerPassword ?? "" : "";
                     RconEnabledCheckBox.IsChecked = serverIsSelected ? selectedServer.ServerSettings?.RCONEnabled ?? false : false;
+                    CustomArgsTextBox.Text = serverIsSelected ? selectedServer.CustomArgs ?? "" : "";
 
                     MapComboBox.IsEnabled = serverIsSelected;
                     if (serverIsSelected)
@@ -763,6 +764,7 @@ namespace ArkServerManager
                     AdminPasswordTextBox.IsEnabled = controlsEnabled;
                     ServerPasswordTextBox.IsEnabled = controlsEnabled;
                     RconEnabledCheckBox.IsEnabled = controlsEnabled;
+                    CustomArgsTextBox.IsEnabled = controlsEnabled;
                     MapComboBox.IsEnabled = controlsEnabled;
 
                     ModListBox.IsEnabled = controlsEnabled;
@@ -863,25 +865,53 @@ namespace ArkServerManager
                         break;
                     case nameof(PlayerLimitTextBox):
                         if (int.TryParse(newValue, out int pl) && pl > 0 && currentServer.PlayerLimit != pl) 
-                        { currentServer.PlayerLimit = pl; changed = true; } break;
+                        { 
+                            currentServer.PlayerLimit = pl; changed = true;
+                        }
+                        break;
                     case nameof(QueryPortTextBox):
                         if (ushort.TryParse(newValue, out ushort qp) && qp > 0 && currentServer.QueryPort != qp) 
-                        { currentServer.QueryPort = qp; changed = true; } break;
+                        { 
+                            currentServer.QueryPort = qp; changed = true; 
+                        }
+                        break;
                     case nameof(GamePortTextBox):
                         if (ushort.TryParse(newValue, out ushort gp) && gp > 0 && currentServer.GamePort != gp)
-                        { currentServer.GamePort = gp; changed = true; } break;
+                        { 
+                            currentServer.GamePort = gp; changed = true; 
+                        }
+                        break;
                     case nameof(RconPortTextBox):
                         if (ushort.TryParse(newValue, out ushort rp) && rp > 0 && currentServer.RconPort != rp) 
-                        { currentServer.RconPort = rp; changed = true; } break;
+                        { 
+                            currentServer.RconPort = rp; changed = true; 
+                        } 
+                        break;
                     case nameof(IpAddressTextBox):
                         if (currentServer.IpAddress != newValue) 
-                        { currentServer.IpAddress = newValue; changed = true; } break;
+                        { 
+                            currentServer.IpAddress = newValue; changed = true;
+                        } 
+                        break;
                     case nameof(AdminPasswordTextBox):
                         if (currentServer.ServerSettings != null && currentServer.ServerSettings.ServerAdminPassword != newValue) 
-                        { currentServer.ServerSettings.ServerAdminPassword = newValue; changed = true; } break;
+                        { 
+                            currentServer.ServerSettings.ServerAdminPassword = newValue; changed = true;
+                        } 
+                        break;
                     case nameof(ServerPasswordTextBox):
                         if (currentServer.ServerSettings != null && currentServer.ServerSettings.ServerPassword != newValue)
-                        { currentServer.ServerSettings.ServerPassword = newValue; changed = true; } break;
+                        { 
+                            currentServer.ServerSettings.ServerPassword = newValue; changed = true;
+                        } 
+                        break;
+                    case nameof(CustomArgsTextBox):
+                        if (currentServer.CustomArgs != newValue)
+                        {
+                            currentServer.CustomArgs = newValue;
+                            changed = true;
+                        }
+                        break;
                 }
             }
             catch (Exception ex) { Debug.WriteLine($"Error handling TextChanged for {textBox.Name}: {ex.Message}"); }

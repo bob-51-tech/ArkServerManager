@@ -684,6 +684,14 @@ namespace ArkServerManager
 
             argsBuilder.Append(" -UseCache");
 
+            // --- CUSTOM ARGUMENTS ---
+            if (!string.IsNullOrWhiteSpace(server.CustomArgs))
+            {
+                // We trim it and ensure there is a space before appending
+                argsBuilder.Append(" " + server.CustomArgs.Trim());
+                LogOutput($"Appended Custom Args: {server.CustomArgs}");
+            }
+
             return argsBuilder.ToString();
         }
 
